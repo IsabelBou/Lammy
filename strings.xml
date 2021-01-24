@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<data>
+    <messages>
+
+        <!--node, id, <param>-->
+
+        <!--Funny messages-->
+
+        <funny id="winning">Are ya winning, son?</funny>
+        
+        <!--Error messages-->
+
+        <error id="not_a_number">Please, enter a number as an argument.</error>
+        <error id="more_than_one">Please, enter only one argument.</error>
+        <error id="channel">Please, use the `!channel` command on the desired channel to set it as the default channel for the bot.</error>
+        <error id="nightmare">Please choose a valid nightmare! I don't know any nightmare named **{PARAM}**</error>
+        <error id="assignment">There's no assignment for nightmare **{PARAM}**. Please add an assignment for that nightmare (!help assignment) or choose a nightmare with an assignment to summon</error>
+        <error id="authentication">User **{PARAM1}** doesn't have permission to use the command **{PARAM2}**</error>
+
+        <!--Info messages-->
+
+        <info id="bot_running">Running.</info>
+        <info id="bot_initialized">LammyBot initialized.</info>
+        <info id="task_initiated">Task initiated.</info>
+        <info id="bot_closed">LammyBot closed.</info>
+        <info id="current_time">Current time: **{PARAM}**</info>
+
+        <info id="time_set">Time set to: **{PARAM}**</info>
+        <info id="channel_selected">Channel **{PARAM}** pinned as default channel.</info>
+
+        <info id="colosseum_about_to_start">**{PARAM}** Colosseum starts in 3 minutes!</info>
+        <info id="colosseum_started">The colosseum has begun.</info>
+        <info id="demon_approaches">**{PARAM}**, demon may approach in about one minute!.</info>
+        <info id="colosseum_ending">**{PARAM}**, the match is ending in a minute! Recover SP, if possible!.</info>
+        <info id="colosseum_finished">The colosseum has finished. Well played, **{PARAM}**.</info>
+        
+        <!--Nightmare round messages-->
+
+        <nightmare id="n">**{PARAM1}**, summon **{PARAM2}**</nightmare>
+        <nightmare id="countdown">**{PARAM1}**, get ready to summon **{PARAM2}**</nightmare>
+
+        <nightmare id="n1">**{PARAM}** throws Blanc</nightmare>
+        <nightmare id="n2">**{PARAM}** throws Ugallu</nightmare>
+        <nightmare id="n3">**{PARAM}** throws Blue Poppy</nightmare>
+        <nightmare id="n4_winning">**{PARAM}** throws Cecilia</nightmare>
+        <nightmare id="n4_losing">**{PARAM}** throws Karkinos</nightmare>
+        <nightmare id="n5">**{PARAM}** throws Lyndwurm</nightmare>
+        <nightmare id="n6">**{PARAM}** throws Freeze Golem</nightmare>
+        <nightmare id="n7_winning">**{PARAM}** throws Dryas</nightmare>
+        <nightmare id="n7_losing">**{PARAM}** throws Justice</nightmare>
+        <nightmare id="n8">**{PARAM}** throws Shadowlord</nightmare>
+        <nightmare id="n9">**{PARAM}** throws Losco Jones</nightmare>
+
+        <!--Printable symbols-->
+        
+        <printable id="separator">=========================</printable>
+
+        <!--Demons round messages-->
+
+        <demon id="1">Instruments/Swords/Polearms</demon>
+        <demon id="1r">Instruments</demon>
+        <demon id="1v">Swords and Polearms</demon>
+        <demon id="2">Instruments/Hammers/Range</demon>
+        <demon id="2r">Instruments</demon>
+        <demon id="2v">Hammers and Range</demon>
+        <demon id="3">Books/Swords/Polearms</demon>
+        <demon id="3r">Books</demon>
+        <demon id="3v">Swords and Polearms</demon>
+        <demon id="4">Books/Hammers/Range</demon>
+        <demon id="4r">Books</demon>
+        <demon id="4v">Hammers and Range</demon>
+        <demon id="5">Staves/Swords/Polearms</demon>
+        <demon id="5r">Staves</demon>
+        <demon id="5v">Swords and Polearms</demon>
+        <demon id="6">Staves/Hammers/Range</demon>
+        <demon id="6r">Staves</demon>
+        <demon id="6v">Hammers and Range</demon>
+    </messages>
+</data>

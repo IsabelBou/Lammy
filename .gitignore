@@ -1,0 +1,6 @@
+.idea/
+.vs/
+.vscode/
+tests.py
+__pycache__/
+leaderbot_log
