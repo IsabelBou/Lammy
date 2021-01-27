@@ -148,5 +148,5 @@ def err(message, hasToPrint):
         print("\033[91m{}\033[0m".format(message))
 
     err = str(date.datetime.now()) + ' | ' + message
-    with open("leaderbot_log", "a") as f:
+    with open("Lammy_log", "a") as f:
         f.writelines("'ERROR: {}'".format(err))

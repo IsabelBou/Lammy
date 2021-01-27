@@ -17,7 +17,7 @@ from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
 from CustomHelpCommand import CustomHelpCommand
 
 
-class LeaderBot:
+class Lammy:
     def __init__(self):
         self.token = u.readToken()
         self.bot = Bot(command_prefix=BOT_PREFIX,
