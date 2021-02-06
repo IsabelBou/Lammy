@@ -48,7 +48,7 @@ class Lammy:
         def get_now_and_destination():
             now = datetime.now(timezone.utc)
             destination = datetime.combine(now.date(), self.colo_time, tzinfo=timezone.utc) + delta
-            if now > destination:
+            if now > destination + interval:
                 destination = destination + timedelta(days=1)
             return now, destination, round_time_delta(destination - now)
 
