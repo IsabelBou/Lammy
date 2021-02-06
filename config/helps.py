@@ -7,7 +7,7 @@ class Helps:
     setdemons = ""
     demonsrearguard = ""
     demonsvanguard = ""
-    nightmares = "Manage/Show current order of colosseum nightmares. Nightmares can be named as their name or by their position in the current nightmare order."
+    nightmares = "Manage/Show current order of colosseum nightmares. Nightmares can be named as their name or by their position in the current nightmare order.\nIf given 2 arguments, swaps both arguments in the order array.\nIf given 1 argument, \"pushes\" the given assignment to the top of the order array."
     delay = ""
     push = ""
     summon = ""
@@ -39,7 +39,7 @@ class Usages:
     setmembers = ""
     setadmin = ""
     info = ""
-    afk = "[username/\"me\"/\"self\"]"
+    afk = "[username | \"me\" | \"self\"]"
     update = ""
     ask = ""
 
