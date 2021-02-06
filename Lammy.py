@@ -261,8 +261,8 @@ class Lammy:
                 u.log(u.getString('colosseum_about_to_start', 'info',
                                   u.getRole(guild_roles, GUILD_ROLE_NAME).mention), has_to_print)
                 #
-                #       Notifies Vanguards and Rearguards, individually, what the first demon's summoning weapons are (21:02)
-                await self.wait_for_colo(timedelta(minutes=2))
+                #       Notifies Vanguards and Rearguards, individually, what the first demon's summoning weapons are (21:03)
+                await self.wait_for_colo(timedelta(minutes=3))
                 await ctx.send(str(u.getRole(guild_roles, GUILD_ROLE_NAME).mention) + ", demon will approach soon!")
                 await ctx.send(str(u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon1 + "r"), 'demon', None) + '**')
                 await ctx.send(str(u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon1 + "v"), 'demon', None) + '**')
