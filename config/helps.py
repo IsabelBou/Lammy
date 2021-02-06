@@ -18,6 +18,7 @@ class Helps:
     setadmin = ""
     info = ""
     afk = ""
+    update = ""
 
 
 class Usages:
@@ -37,6 +38,7 @@ class Usages:
     setadmin = ""
     info = ""
     afk = "[username/\"me\"/\"self\"]"
+    update = ""
 
 
 class Briefs:
@@ -56,3 +58,4 @@ class Briefs:
     setadmin = ""
     info = ""
     afk = ""
+    update = ""

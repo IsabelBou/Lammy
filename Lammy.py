@@ -540,6 +540,13 @@ class Lammy:
                     self.current_nm_order[nm2_order_index] = nm1_assignment_index
                 await ctx.send("Successfully changed nightmare order!\nCurrent nightmare order is:\n{}".format(get_current_nightmare_order()))
 
+        @bot.command(name="update", aliases=['u'],  brief=Briefs.update, help=Helps.update, usage=Usages.update)
+        @self.requires_admin_role
+        async def force_update_nms(ctx: Context):
+            await ctx.send("Updating nightmare data now....")
+            u.nightmare_scrapper.reload_nm_data()
+            await ctx.send("Finished updating nightmare data! Now everything's up to date!")
+
         u.log(u.getString('bot_running', 'info', None), has_to_print)
         bot.run(self.token)
         u.clear()
