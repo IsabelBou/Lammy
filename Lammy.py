@@ -535,6 +535,11 @@ class Lammy:
         async def manage_nightmare_order(ctx: Context, *args):
             if len(args) == 0:
                 await ctx.send("Current nightmare order is:\n{}You can change the order using the command `{}order {{nm1}} {{nm2}}`.".format(get_current_nightmare_order(), BOT_PREFIX))
+            elif len(args) == 1:
+                assignment = u.get_nm_assignment_from_message(" ".join(args))
+                if assignment is None:
+                    return ctx.send("I don't have any assignment data for {}!\nCheck that assignments with `{}assignment`".format(nm_string, BOT_PREFIX))
+                return await push_summon(ctx, *args)
             elif not u.user_is_permitted(ctx.author, self.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             elif args[0].lower() in ("remove", '-r'):
