@@ -6,14 +6,15 @@ from datetime import datetime, time, timedelta, timezone
 from functools import wraps
 from itertools import starmap
 
-from discord import Embed, Game
+from discord import Game, Message
 from discord.ext.commands import Bot, CommandNotFound, Context
 
 import Utils as u
 from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
                     GUILD_ROLE_NAME, REARGUARD_ROLE_NAME, VANGUARD_ROLE_NAME,
-                    AssignmentData, Briefs, Helps, Usages, assignments,
-                    has_to_print, initial_order)
+                    AssignmentData, Briefs, Emojis, Helps, Usages, assignments,
+                    equipped_nms, has_to_print, initial_order)
+from config.dataclasses import NightmareData, User
 from CustomHelpCommand import CustomHelpCommand
 
 
@@ -115,6 +116,29 @@ class Lammy:
             else:
                 traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
                 await ctx.send("Something's wrong! tell Lammy's managment team that I got a {}".format(error))
+
+        @bot.event
+        async def on_reaction_add(reaction, user):
+            embed = reaction.message.embeds[0]
+            nm_name = embed.title
+            nm = u.get_nm_data_from_message(nm_name)
+            user = User(user.display_name, user.mention)
+            if user.mention == bot.user.mention:
+                return
+            emoji_str = str(reaction.emoji)
+            try:
+                emoji = Emojis(emoji_str)
+            except ValueError:
+                return
+            if nm in equipped_nms:
+                if emoji in equipped_nms[nm]:
+                    equipped_nms[nm][emoji].append(user)
+                else:
+                    equipped_nms[nm][emoji] = [user]
+            else:
+                equipped_nms[nm] = {
+                    emoji: [user]
+                }
 
         @bot.command(name='setadmin', aliases=['sa'], help=Helps.setadmin, brief=Briefs.setadmin, usage=Usages.setadmin)
         async def set_admin(ctx: Context, *args):
@@ -288,11 +312,9 @@ class Lammy:
             nm_string = " ".join(args)
             nm = u.get_nm_data_from_message(nm_string)
             if nm is not None:
-                embed = Embed(title=nm.name, color=int(nm.color))
-                embed.add_field(name=nm.skill_name, value=nm.description.replace(r"\n", "\n"))
-                embed.add_field(name="Costs {}SP".format(nm.sp),
-                                value="Duration: {} seconds.\nLead time: {} seconds.".format(nm.duration, nm.lead_time))
-                embed.set_image(url="https://sinoalice.game-db.tw/images/card/CardS{}.png".format(str(nm.card_id).rjust(4, '0')))
+                embed = nm.embed
+                if nm in equipped_nms:
+                    embed.add_field(name="Members Equipped", value=equipped_nms_string(nm), inline=False)
                 await ctx.send(embed=embed)
             else:
                 await ctx.send("I don't know any nightmare called {}!".format(nm_string))
@@ -434,6 +456,17 @@ class Lammy:
                                                                                                                   assignment.user.name, assignment.nm.duration, assignment.nm.lead_time, assignment.nm.sp)
             return final_string
 
+        def equipped_nms_string(nm: NightmareData):
+            string = str()
+            data = equipped_nms.get(nm)
+            if Emojis.V in data:
+                string += "**Equipped**: {}\n".format(", ".join([user.name for user in data[Emojis.V]]))
+            if Emojis.L in data:
+                string += "**Evolved**: {}\n".format(", ".join([user.name for user in data[Emojis.L]]))
+            if Emojis.S in data:
+                string += "**Unevolved**: {}\n".format(", ".join([user.name for user in data[Emojis.S]]))
+            return string
+
         @bot.command(name="replace", aliases=['r', 'rn', 'replacenightmare'], help=Helps.summon, brief=Briefs.summon, usage=Usages.summon)
         @self.requires_admin_role
         async def nextsummon(ctx, *message):
@@ -546,6 +579,22 @@ class Lammy:
             await ctx.send("Updating nightmare data now....")
             u.nightmare_scrapper.reload_nm_data()
             await ctx.send("Finished updating nightmare data! Now everything's up to date!")
+
+        @bot.command(name="ask", aliases=['check'], brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
+        @self.requires_admin_role
+        async def ask_nightmare_assignments(ctx: Context, *args):
+            if len(args) == 0:
+                return await ctx.send("Please provide 1 or more arguments for this command!")
+            nm_string = " ".join(args)
+            nm = u.get_nm_data_from_message(nm_string)
+            if nm is not None:
+                embed = nm.embed
+                message: Message = await ctx.send(embed=embed)
+                await message.add_reaction(Emojis.L.value)
+                await message.add_reaction(Emojis.S.value)
+                await message.add_reaction(Emojis.V.value)
+            else:
+                await ctx.send("I don't know any nightmare called {}!".format(nm_string))
 
         u.log(u.getString('bot_running', 'info', None), has_to_print)
         bot.run(self.token)

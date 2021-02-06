@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 
+from discord.embeds import Embed
 from numpy import int
 
 
-@dataclass
+@dataclass(frozen=True)
 class NightmareData:
     sp: int
     duration: int
@@ -13,6 +14,15 @@ class NightmareData:
     skill_name: str
     lead_time: int
     color: int
+
+    @property
+    def embed(self):
+        embed = Embed(title=self.name, color=int(self.color))
+        embed.add_field(name=self.skill_name, value=self.description.replace(r"\n", "\n"))
+        embed.add_field(name="Costs {}SP".format(self.sp),
+                        value="Duration: {} seconds.\nLead time: {} seconds.".format(self.duration, self.lead_time))
+        embed.set_image(url="https://sinoalice.game-db.tw/images/card/CardS{}.png".format(str(self.card_id).rjust(4, '0')))
+        return embed
 
 
 @dataclass
@@ -26,11 +36,8 @@ class User:
     def __hash__(self) -> int:
         return hash(self.name)
 
-    def __eq__(self, o: 'User') -> bool:
-        return self.name == o.name and self.mention == o.mention
 
-
-@dataclass
+@dataclass(frozen=True)
 class AssignmentData:
     nm: NightmareData
     user: User

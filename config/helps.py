@@ -2,7 +2,8 @@ from config.config import BOT_PREFIX
 
 
 class Helps:
-    assignment = "Displays/manages nightmare assignments for colo!\nAdd/modify nightmare assignment using:\n\t`{}assignment {{nm}} {{user}}`\nWhere \"nm\" is the nightmare to assign and \"user\" is the user assigned to that nightmare".format(BOT_PREFIX)
+    assignment = "Displays/manages nightmare assignments for colo!\nAdd/modify nightmare assignment using:\n\t`{}assignment {{nm}} {{user}}`\nWhere \"nm\" is the nightmare to assign and \"user\" is the user assigned to that nightmare".format(
+        BOT_PREFIX)
     setdemons = ""
     demonsrearguard = ""
     demonsvanguard = ""
@@ -19,14 +20,15 @@ class Helps:
     info = ""
     afk = ""
     update = ""
+    ask = ""
 
 
 class Usages:
-    assignment = "[nm, user]"
+    assignment = "[nm | [ -r | remove ], user]"
     setdemons = ""
     demonsrearguard = ""
     demonsvanguard = ""
-    nightmares = "[nightmare1, nightmare2]"
+    nightmares = "[nightmare1 | [ -r | remove ], nightmare2]"
     delay = ""
     push = ""
     summon = ""
@@ -39,6 +41,7 @@ class Usages:
     info = ""
     afk = "[username/\"me\"/\"self\"]"
     update = ""
+    ask = ""
 
 
 class Briefs:
@@ -59,3 +62,4 @@ class Briefs:
     info = ""
     afk = ""
     update = ""
+    ask = ""

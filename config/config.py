@@ -1,8 +1,9 @@
-from typing import List
+from enum import Enum
+from typing import Dict, List
 
 from discord import Intents
 
-from config.dataclasses import AssignmentData, NightmareData
+from config.dataclasses import AssignmentData, NightmareData, User
 
 # The next var defines whether or not the messages have to be printed on the bash.
 # In production it must to be set to False
@@ -20,7 +21,16 @@ REARGUARD_ROLE_NAME = "Rearguard"
 
 
 # represents: Nightmare (mentioned with role), Assigned person, Total duration
-assignments: List[AssignmentData] = []
+assignments: List[AssignmentData] = list()
 # nightmare order: Order based on the positions of nightmares in assignments matrix
 # 0: mensaje perder ganar 1: asdjhakd
-initial_order = []
+initial_order = list()
+
+
+class Emojis(Enum):
+    L = "🇱"
+    S = "🇸"
+    V = "☑️"
+
+
+equipped_nms: Dict[NightmareData, Dict[Emojis, List[User]]] = dict()
