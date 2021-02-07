@@ -21,6 +21,7 @@ class Helps:
     afk = ""
     update = ""
     ask = ""
+    check = ""
 
 
 class Usages:
@@ -42,6 +43,7 @@ class Usages:
     afk = "[username | \"me\" | \"self\"]"
     update = ""
     ask = ""
+    check = ""
 
 
 class Briefs:
@@ -63,3 +65,4 @@ class Briefs:
     afk = ""
     update = ""
     ask = ""
+    check = ""
