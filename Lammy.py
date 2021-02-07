@@ -5,14 +5,9 @@ import traceback
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
 from itertools import starmap
-from typing import Tuple
 
 from discord import Game, Message
-from discord.abc import GuildChannel
-from discord.channel import TextChannel
 from discord.ext.commands import Bot, CommandNotFound, Context
-from discord.guild import Guild
-from discord.raw_models import RawReactionActionEvent
 
 import Utils as u
 from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
