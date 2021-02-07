@@ -4,7 +4,7 @@ import sys
 import traceback
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
-from itertools import starmap
+from itertools import groupby, starmap
 
 from discord import Game, Message
 from discord.ext.commands import Bot, CommandNotFound, Context
@@ -322,7 +322,7 @@ class Lammy:
                 await ctx.send(embed=embed)
             else:
                 await ctx.send("I don't know any nightmare called {}!".format(nm_string))
-        
+
         @bot.command(name='check', help=Helps.check, brief=Briefs.check, usage=Usages.check)
         async def check(ctx: Context, *args):
             if len(args) == 0:
@@ -603,17 +603,25 @@ class Lammy:
             u.nightmare_scrapper.reload_nm_data()
             await ctx.send("Finished updating nightmare data! Now everything's up to date!")
 
-        @bot.command(name="ask", brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
+        @bot.command(name='ask', brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
         @self.requires_admin_role
         async def ask_nightmare_assignments(ctx: Context, *args):
             if len(args) == 0:
-                async for message in ctx.history(oldest_first=True):
-                    await update_equiped_nms_from_message(message)
+                history = [message for message in await ctx.history(oldest_first=False).flatten() if message.embeds and message.reactions]
+                history.sort(key=lambda message: (message.embeds[0].title, message.created_at))
+                filtered = list()
+                for message, group in groupby(history, key=lambda message: message.embeds[0].title):
+                    group = list(group)
+                    filtered.append(group[-1])
+                for message in filtered:
+                    if message.embeds:
+                        await update_equiped_nms_from_message(message)
                 return await ctx.message.delete()
             nm_string = " ".join(args)
             nm = u.get_nm_data_from_message(nm_string)
             if nm is not None:
                 embed = nm.embed
+                embed.title = embed.title
                 message: Message = await ctx.send(embed=embed)
                 await message.add_reaction(Emojis.L.value)
                 await message.add_reaction(Emojis.S.value)
