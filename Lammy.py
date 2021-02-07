@@ -607,7 +607,7 @@ class Lammy:
         @self.requires_admin_role
         async def ask_nightmare_assignments(ctx: Context, *args):
             if len(args) == 0:
-                async for message in ctx.history():
+                async for message in ctx.history(oldest_first=True):
                     await update_equiped_nms_from_message(message)
                 return await ctx.message.delete()
             nm_string = " ".join(args)
