@@ -324,6 +324,18 @@ class Lammy:
             nm = u.get_nm_data_from_message(nm_string)
             if nm is not None:
                 embed = nm.embed
+                await ctx.send(embed=embed)
+            else:
+                await ctx.send("I don't know any nightmare called {}!".format(nm_string))
+        
+        @bot.command(name='check', help=Helps.check, brief=Briefs.check, usage=Usages.check)
+        async def check(ctx: Context, *args):
+            if len(args) == 0:
+                return await ctx.send("Please provide 1 or more arguments for this command!")
+            nm_string = " ".join(args)
+            nm = u.get_nm_data_from_message(nm_string)
+            if nm is not None:
+                embed = nm.embed
                 if nm in equipped_nms and any(equipped_nms[nm].values()):
                     embed.add_field(name="Members Equipped", value=equipped_nms_string(nm), inline=False)
                 await ctx.send(embed=embed)
@@ -596,7 +608,7 @@ class Lammy:
             u.nightmare_scrapper.reload_nm_data()
             await ctx.send("Finished updating nightmare data! Now everything's up to date!")
 
-        @bot.command(name="ask", aliases=['check'], brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
+        @bot.command(name="ask", brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
         @self.requires_admin_role
         async def ask_nightmare_assignments(ctx: Context, *args):
             if len(args) == 0:
