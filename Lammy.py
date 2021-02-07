@@ -5,9 +5,14 @@ import traceback
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
 from itertools import starmap
+from typing import Tuple
 
 from discord import Game, Message
+from discord.abc import GuildChannel
+from discord.channel import TextChannel
 from discord.ext.commands import Bot, CommandNotFound, Context
+from discord.guild import Guild
+from discord.raw_models import RawReactionActionEvent
 
 import Utils as u
 from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
@@ -117,28 +122,34 @@ class Lammy:
                 traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
                 await ctx.send("Something's wrong! tell Lammy's managment team that I got a {}".format(error))
 
+        async def message_from_payload(payload) -> Message:
+            return await bot.get_channel(payload.channel_id).get_partial_message(payload.message_id).fetch()
+
+        async def update_equiped_nms_from_message(message: Message):
+            lammy_mention = bot.user.mention
+            if message.author.mention != lammy_mention or not message.embeds:
+                return
+            nm = u.get_nm_data_from_message(message.embeds[0].title)
+            if nm not in equipped_nms:
+                equipped_nms[nm] = {emoji: list() for emoji in Emojis}
+            for reaction in message.reactions:
+                try:
+                    emoji = Emojis(str(reaction.emoji))
+                except ValueError:
+                    continue
+                equipped_nms[nm][emoji] = [User(user.display_name, user.mention) async for user in reaction.users() if user.mention != lammy_mention]
+
         @bot.event
-        async def on_reaction_add(reaction, user):
-            embed = reaction.message.embeds[0]
-            nm_name = embed.title
-            nm = u.get_nm_data_from_message(nm_name)
-            user = User(user.display_name, user.mention)
-            if user.mention == bot.user.mention:
-                return
-            emoji_str = str(reaction.emoji)
-            try:
-                emoji = Emojis(emoji_str)
-            except ValueError:
-                return
-            if nm in equipped_nms:
-                if emoji in equipped_nms[nm]:
-                    equipped_nms[nm][emoji].append(user)
-                else:
-                    equipped_nms[nm][emoji] = [user]
-            else:
-                equipped_nms[nm] = {
-                    emoji: [user]
-                }
+        async def on_raw_reaction_add(payload):
+            await update_equiped_nms_from_message(await message_from_payload(payload))
+
+        @bot.event
+        async def on_raw_reaction_remove(payload):
+            await update_equiped_nms_from_message(await message_from_payload(payload))
+
+        @bot.event
+        async def on_raw_reaction_clear(payload):
+            await update_equiped_nms_from_message(await message_from_payload(payload))
 
         @bot.command(name='setadmin', aliases=['sa'], help=Helps.setadmin, brief=Briefs.setadmin, usage=Usages.setadmin)
         async def set_admin(ctx: Context, *args):
@@ -313,7 +324,19 @@ class Lammy:
             nm = u.get_nm_data_from_message(nm_string)
             if nm is not None:
                 embed = nm.embed
-                if nm in equipped_nms:
+                await ctx.send(embed=embed)
+            else:
+                await ctx.send("I don't know any nightmare called {}!".format(nm_string))
+        
+        @bot.command(name='check', help=Helps.check, brief=Briefs.check, usage=Usages.check)
+        async def check(ctx: Context, *args):
+            if len(args) == 0:
+                return await ctx.send("Please provide 1 or more arguments for this command!")
+            nm_string = " ".join(args)
+            nm = u.get_nm_data_from_message(nm_string)
+            if nm is not None:
+                embed = nm.embed
+                if nm in equipped_nms and any(equipped_nms[nm].values()):
                     embed.add_field(name="Members Equipped", value=equipped_nms_string(nm), inline=False)
                 await ctx.send(embed=embed)
             else:
@@ -585,11 +608,13 @@ class Lammy:
             u.nightmare_scrapper.reload_nm_data()
             await ctx.send("Finished updating nightmare data! Now everything's up to date!")
 
-        @bot.command(name="ask", aliases=['check'], brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
+        @bot.command(name="ask", brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
         @self.requires_admin_role
         async def ask_nightmare_assignments(ctx: Context, *args):
             if len(args) == 0:
-                return await ctx.send("Please provide 1 or more arguments for this command!")
+                async for message in ctx.history():
+                    await update_equiped_nms_from_message(message)
+                return await ctx.message.delete()
             nm_string = " ".join(args)
             nm = u.get_nm_data_from_message(nm_string)
             if nm is not None:
