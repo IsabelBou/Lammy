@@ -542,10 +542,13 @@ class Lammy:
 
         def get_current_nightmare_order():
             final_string = ''
+            time_sum = 0
             for order_index, nm_index in enumerate(self.current_nm_order):
                 assignment = assignments[nm_index]
                 final_string += "`{}`\t**{}** (assigned to {}). Lasts {} seconds, takes {} seconds and {} sp.\n".format(
                     order_index, assignment.nm.name, assignment.user.name, assignment.nm.duration, assignment.nm.lead_time, assignment.nm.sp)
+                time_sum += assignment.nm.lead_time + assignment.nm.duration
+            final_string += "**Total Time**: " + time_sum
             return final_string
 
         @bot.command(name="order", aliases=['nightmares', 'nmorder', 'o', 'nm'],  brief=Briefs.nightmares, help=Helps.nightmares, usage=Usages.nightmares)
