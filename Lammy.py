@@ -352,7 +352,7 @@ class Lammy:
                 u.err('Couldn\'t cancel task: ' + repr(e), has_to_print)
                 await ctx.send("Couldn't stop tasks!")
 
-        @bot.command(name="list demons", aliases=['demonlist', 'dl'], help=Helps.list_demons, brief=Briefs.list_demons, usage=Usages.list_demons)
+        @bot.command(name="demonlist", aliases=['dl'], help=Helps.list_demons, brief=Briefs.list_demons, usage=Usages.list_demons)
         async def listdemon(ctx):
             demons = ''
             for demon in range(1, 7):
