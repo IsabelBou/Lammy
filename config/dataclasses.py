@@ -37,7 +37,7 @@ class User:
         return hash(self.name)
 
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class AssignmentData:
     nm: NightmareData
     user: User

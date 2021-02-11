@@ -548,7 +548,7 @@ class Lammy:
                 final_string += "`{}`\t**{}** (assigned to {}). Lasts {} seconds, takes {} seconds and {} sp.\n".format(
                     order_index, assignment.nm.name, assignment.user.name, assignment.nm.duration, assignment.nm.lead_time, assignment.nm.sp)
                 time_sum += assignment.nm.lead_time + assignment.nm.duration
-            final_string += "**Total Time**: " + time_sum
+            final_string += "**Total Time**: {0} seconds ({1}).\n".format(time_sum, timedelta(seconds=int(time_sum)))
             return final_string
 
         @bot.command(name="order", aliases=['nightmares', 'nmorder', 'o', 'nm'],  brief=Briefs.nightmares, help=Helps.nightmares, usage=Usages.nightmares)
@@ -558,6 +558,7 @@ class Lammy:
                 await ctx.send("Current nightmare order is:\n{}You can change the order using the command `{}order {{nm1}} {{nm2}}`.".format(get_current_nightmare_order(), BOT_PREFIX))
             elif len(args) == 1:
                 assignment = u.get_nm_assignment_from_message(" ".join(args))
+                nm_string = " ".join(args[1:])
                 if assignment is None:
                     return ctx.send("I don't have any assignment data for {}!\nCheck that assignments with `{}assignment`".format(nm_string, BOT_PREFIX))
                 return await push_summon(ctx, *args)
