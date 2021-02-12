@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 from discord.ext.commands.context import Context
 from discord.member import Member
 
-from config import NightmareData, User, assignments
+from config import NightmareData, User
 from NightmareScrapper import nightmare_scrapper
 
 
@@ -51,7 +51,7 @@ def get_nm_data_from_message(message):
     return NightmareData(**df.iloc[0].to_dict())
 
 
-def get_nm_assignment_from_message(message, index_from_order_arr=False, current_order_list=None):
+def get_nm_assignment_from_message(message, assignments, index_from_order_arr=False, current_order_list=None):
     """
     :param message: A string/int which represents the name of a nightmare/member in the assignments list
     :param index_from_order_arr: If given message is an int representing an index, specify if that index is of order list or assignments list
