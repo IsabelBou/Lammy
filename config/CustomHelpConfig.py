@@ -213,7 +213,7 @@ EMBED_MAPPING = dict(
                     BOT_PREFIX)
             )
         ]
-/*    ),
+'''    ),
     infomore=dict(
         title="**Nightmare information (more)**",
         description="Command names: `{0}infomore`, `{0}inmo`".format(BOT_PREFIX),
@@ -225,6 +225,6 @@ EMBED_MAPPING = dict(
 				Doesn't require the full nightmare name a reduced, unique string of characters for said nightmare is enough.
                 *Note: Lammy is a smol clam, so if your reduced string is not unique to one nightmare and is, in fact, part of more than one nightmare's full name, Lammy will be confused and won't retrieve the information!*"""
             )
-        ] */
+        ] '''
     )
 )
