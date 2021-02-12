@@ -29,15 +29,18 @@ class ConfigurationSaver:
 
     def _load_conf_data(self):
         with open(self.target_file, 'rb') as fd:
-            conf = load(fd)
-            self._running_bot.assignments = conf["assignments"]
-            self._running_bot.equipped_nms = conf["equipped_nms"]
-            self._running_bot.admin_roles = conf["admin_roles"]
-            self._running_bot.member_roles = conf["member_roles"]
-            self._running_bot.afks = conf["afks"]
-            self._running_bot.colo_time = conf["colo_time"]
-            self._running_bot.demon1 = conf["demons"][0]
-            self._running_bot.demon2 = conf["demons"][1]
+            try:
+                conf = load(fd)
+                self._running_bot.assignments = conf["assignments"]
+                self._running_bot.equipped_nms = conf["equipped_nms"]
+                self._running_bot.admin_roles = conf["admin_roles"]
+                self._running_bot.member_roles = conf["member_roles"]
+                self._running_bot.afks = conf["afks"]
+                self._running_bot.colo_time = conf["colo_time"]
+                self._running_bot.demon1 = conf["demons"][0]
+                self._running_bot.demon2 = conf["demons"][1]
+            except EOFError:
+                pass
 
     @property
     def _conf_data(self):
