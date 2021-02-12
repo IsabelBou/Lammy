@@ -20,8 +20,6 @@ VANGUARD_ROLE_NAME = "Vanguard"
 REARGUARD_ROLE_NAME = "Rearguard"
 
 
-# represents: Nightmare (mentioned with role), Assigned person, Total duration
-assignments: List[AssignmentData] = list()
 # nightmare order: Order based on the positions of nightmares in assignments matrix
 # 0: mensaje perder ganar 1: asdjhakd
 initial_order = list()
@@ -32,5 +30,3 @@ class Emojis(Enum):
     S = "🇸"
     V = "☑️"
 
-
-equipped_nms: Dict[NightmareData, Dict[Emojis, List[User]]] = dict()

@@ -5,6 +5,7 @@ import traceback
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
 from itertools import groupby, starmap
+from typing import Dict, List
 
 from discord import Game, Message
 from discord.ext.commands import Bot, CommandNotFound, Context
@@ -12,8 +13,8 @@ from discord.ext.commands import Bot, CommandNotFound, Context
 import Utils as u
 from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
                     GUILD_ROLE_NAME, REARGUARD_ROLE_NAME, VANGUARD_ROLE_NAME,
-                    AssignmentData, Briefs, Emojis, Helps, Usages, assignments,
-                    equipped_nms, has_to_print, initial_order)
+                    AssignmentData, Briefs, Emojis, Helps, Usages,
+                    has_to_print, initial_order)
 from config.dataclasses import NightmareData, User
 from CustomHelpCommand import CustomHelpCommand
 
@@ -35,6 +36,10 @@ class Lammy:
         self.current_nm_order_index = 0
         self.admin_roles = set()
         self.member_roles = set()
+
+        self.equipped_nms: Dict[NightmareData, Dict[Emojis, List[User]]] = dict()
+
+        self.assignments: List[AssignmentData] = list()
 
         self.afks = set()
 
@@ -70,7 +75,7 @@ class Lammy:
 
     @property
     def current_assignment(self):
-        return assignments[self.current_nm_order[self.current_nm_order_index]]
+        return self.assignments[self.current_nm_order[self.current_nm_order_index]]
 
     @property
     def current_nm_order(self):
@@ -125,14 +130,14 @@ class Lammy:
             if message.author.mention != lammy_mention or not message.embeds:
                 return
             nm = u.get_nm_data_from_message(message.embeds[0].title)
-            if nm not in equipped_nms:
-                equipped_nms[nm] = {emoji: list() for emoji in Emojis}
+            if nm not in self.equipped_nms:
+                self.equipped_nms[nm] = {emoji: list() for emoji in Emojis}
             for reaction in message.reactions:
                 try:
                     emoji = Emojis(str(reaction.emoji))
                 except ValueError:
                     continue
-                equipped_nms[nm][emoji] = [User(user.display_name, user.mention) async for user in reaction.users() if user.mention != lammy_mention]
+                self.equipped_nms[nm][emoji] = [User(user.display_name, user.mention) async for user in reaction.users() if user.mention != lammy_mention]
 
         @bot.event
         async def on_raw_reaction_add(payload):
@@ -182,7 +187,7 @@ class Lammy:
 
         @bot.command(name='start', help=Helps.start, brief=Briefs.start, usage=Usages.start)
         @self.requires_admin_role
-        async def start(ctx):
+        async def start(ctx: Context):
             try:
                 self.colo_task.cancel()
             except:
@@ -257,7 +262,7 @@ class Lammy:
                 # coge índice de pesadilla de la matriz de order -- EN: grab nightmare index from order array
                 for i in range(1, len(self.current_nm_order)):
                     self.current_nm_order_index = i
-                    previous_nm = assignments[self.current_nm_order[i-1]]
+                    previous_nm = self.assignments[self.current_nm_order[i-1]]
 
                     await asyncio.sleep(self.retards)
                     self.retards = 0
@@ -331,7 +336,7 @@ class Lammy:
             nm = u.get_nm_data_from_message(nm_string)
             if nm is not None:
                 embed = nm.embed
-                if nm in equipped_nms and any(equipped_nms[nm].values()):
+                if nm in self.equipped_nms and any(self.equipped_nms[nm].values()):
                     embed.add_field(name="Members Equipped", value=equipped_nms_string(nm), inline=False)
                 await ctx.send(embed=embed)
             else:
@@ -419,11 +424,11 @@ class Lammy:
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             elif message[0].lower() in ("remove", "-r"):
                 nm_string = " ".join(message[1:])
-                assignment = u.get_nm_assignment_from_message(nm_string)
+                assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
                 if not assignment:
                     return await ctx.send("I don't have any assignment for {}!\nPlease check the assignments using `{}assignment`".format(nm_string, BOT_PREFIX))
                 try:
-                    assignments.remove(assignment)
+                    self.assignments.remove(assignment)
                     await ctx.send("Successfully remove {} from assignments!".format(assignment.nm.name))
                 except ValueError:
                     await ctx.send("{} doesn't have an assignment! Please make sure it's in the assignment list using `{}assignment`".format(nm_string, BOT_PREFIX))
@@ -439,9 +444,9 @@ class Lammy:
                         if nm is None:
                             return await ctx.send(u.getString("nightmare", "error", "{} or {}".format(nm_string, user_string)))
                     # Get existing assignment of nm/user
-                    nm_already_exists = u.get_nm_assignment_from_message(nm_string)
+                    nm_already_exists = u.get_nm_assignment_from_message(nm_string, self.assignments)
                     user_already_exists = u.get_nm_assignment_from_message(
-                        user.name)
+                        user.name, self.assignments)
                     if nm_already_exists and user_already_exists:
                         # Just switch users if both exist
                         tmp_user = nm_already_exists.user
@@ -460,23 +465,23 @@ class Lammy:
                         user_already_exists.nm = nm
                         user_already_exists.user = user
                     else:
-                        assignments.append(AssignmentData(nm, user))
+                        self.assignments.append(AssignmentData(nm, user))
                     await ctx.send("Successfully updated assignments!\nNow they look like this:\n{}".format(assignments_string()))
                 except ValueError:
                     await ctx.send("Please provide 2 arguments! First the Name of the nightmare, then the name of the user!\n(For names with spaces use quotes)")
 
         def assignments_string():
-            if len(assignments) == 0:
+            if len(self.assignments) == 0:
                 return "No assignments data :("
             final_string = ''
-            for assignment in assignments:
+            for assignment in self.assignments:
                 final_string += "**{}** (assigned to {}). Lasts {} seconds, takes {} seconds and {} sp.\n".format(assignment.nm.name,
                                                                                                                   assignment.user.name, assignment.nm.duration, assignment.nm.lead_time, assignment.nm.sp)
             return final_string
 
         def equipped_nms_string(nm: NightmareData):
             string = str()
-            data = equipped_nms.get(nm)
+            data = self.equipped_nms.get(nm)
             if Emojis.V in data:
                 string += "**Equipped**: {}\n".format(", ".join([user.name for user in data[Emojis.V]]))
             if Emojis.L in data:
@@ -492,13 +497,13 @@ class Lammy:
                 await ctx.send("Please type the next nightmare you want summoned. If you want to check a list with said nightmares, type `{}assignmentlist`".foramt(BOT_PREFIX))
             else:
                 # Switch between current nightmare and chosen nightmare in order list
-                chosen_nm = u.get_nm_assignment_from_message(" ".join(message))
+                chosen_nm = u.get_nm_assignment_from_message(" ".join(message), self.assignments)
                 if chosen_nm is None:
                     chosen_nm = u.get_nm_data_from_message(" ".join(message))
                     if chosen_nm is None:
                         return await ctx.send(u.getString("nightmare", "error", ' '.join(message)))
                     return await ctx.send(u.getString("assignment", "error", ' '.join(message)))
-                chosen_nm_assignments_index = assignments.index(chosen_nm)
+                chosen_nm_assignments_index = self.assignments.index(chosen_nm)
                 current_nm_assignments_index = self.current_nm_order[self.current_nm_order_index]
                 try:
                     chosen_nm_order_index = self.current_nm_order.index(
@@ -515,17 +520,17 @@ class Lammy:
             if len(message) == 0:
                 await ctx.send("Please type the next nightmare you want summoned. If you want to check a list with said nightmares, type `{}assignmentlist`".format(BOT_PREFIX))
             else:
-                chosen_nm = u.get_nm_assignment_from_message(" ".join(message))
+                chosen_nm = u.get_nm_assignment_from_message(" ".join(message), self.assignments)
                 if chosen_nm is None:
                     chosen_nm = u.get_nm_data_from_message(" ".join(message))
                     if chosen_nm is None:
                         return await ctx.send(u.getString("nightmare", "error", ' '.join(message)))
                     return await ctx.send(u.getString("assignment", "error", ' '.join(message)))
                 # if chosen nightmare is already in order list, switches summon instead of pushing it
-                elif assignments.index(chosen_nm) in self.current_nm_order:
+                elif self.assignments.index(chosen_nm) in self.current_nm_order:
                     return await nextsummon(ctx, *message)
                 # Push chosen nightmare before current nightmare in order list
-                chosen_nm_assignments_index = assignments.index(chosen_nm)
+                chosen_nm_assignments_index = self.assignments.index(chosen_nm)
                 current_nm_order_index = self.current_nm_order_index
                 self.current_nm_order.insert(
                     current_nm_order_index, chosen_nm_assignments_index)
@@ -544,7 +549,7 @@ class Lammy:
             final_string = ''
             time_sum = 0
             for order_index, nm_index in enumerate(self.current_nm_order):
-                assignment = assignments[nm_index]
+                assignment = self.assignments[nm_index]
                 final_string += "`{}`\t**{}** (assigned to {}). Lasts {} seconds, takes {} seconds and {} sp.\n".format(
                     order_index, assignment.nm.name, assignment.user.name, assignment.nm.duration, assignment.nm.lead_time, assignment.nm.sp)
                 time_sum += assignment.nm.lead_time + assignment.nm.duration
@@ -557,7 +562,7 @@ class Lammy:
             if len(args) == 0:
                 await ctx.send("Current nightmare order is:\n{}You can change the order using the command `{}order {{nm1}} {{nm2}}`.".format(get_current_nightmare_order(), BOT_PREFIX))
             elif len(args) == 1:
-                assignment = u.get_nm_assignment_from_message(" ".join(args))
+                assignment = u.get_nm_assignment_from_message(" ".join(args), self.assignments)
                 nm_string = " ".join(args[1:])
                 if assignment is None:
                     return ctx.send("I don't have any assignment data for {}!\nCheck that assignments with `{}assignment`".format(nm_string, BOT_PREFIX))
@@ -566,10 +571,10 @@ class Lammy:
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             elif args[0].lower() in ("remove", '-r'):
                 nm_string = " ".join(args[1:])
-                assignment = u.get_nm_assignment_from_message(nm_string)
+                assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
                 if assignment is None:
                     return ctx.send("I don't have any assignment data for {}!\nCheck that assignments with `{}assignment`".format(nm_string, BOT_PREFIX))
-                assignment_index = assignments.index(assignment)
+                assignment_index = self.assignments.index(assignment)
                 try:
                     self.current_nm_order.remove(assignment_index)
                     await ctx.send("Successfully removed {} from order list!".format(assignment.nm.name))
@@ -577,10 +582,10 @@ class Lammy:
                     await ctx.send("{} isn't in the order list!\nCheck the order list with `{}order`".format(assignment.nm.name, BOT_PREFIX))
             else:
                 nm1, nm2 = starmap(u.get_nm_assignment_from_message, zip(
-                    args, (True,) * 2, (self.current_nm_order, ) * 2))
+                    args, (self.assignments,) * 2, (True,) * 2, (self.current_nm_order, ) * 2))
                 try:
                     nm1_assignment_index, nm2_assignment_index = map(
-                        assignments.index, (nm1, nm2))
+                        self.assignments.index, (nm1, nm2))
                 except ValueError:
                     return await ctx.send("Please make sure both nightmares have assignments for them!")
                 nm1_order_index, nm2_order_index = None, None
