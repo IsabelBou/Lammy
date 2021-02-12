@@ -1,4 +1,3 @@
-from io import TextIOWrapper
 from pickle import dump, load
 from threading import Timer
 
@@ -11,25 +10,22 @@ class ConfigurationSaver:
         self._interval = interval
         self._timer = None
         self._running_bot = bot
-        self._is_running = False
 
     def _run(self):
+        self._timer = Timer(self._interval, self._run)
+        self._timer.start()
         with open(self.target_file, "wb") as fd:
             dump(self._conf_data, fd)
-        self._is_running = False
-        self._timer = Timer(self._interval, self._run,)
-        self._timer.start()
 
     def start(self):
         try:
             self._load_conf_data()
-        except EOFError as e:
-            print(e)
+        except FileNotFoundError as e:
+            pass
         self._run()
 
     def stop(self):
         self._timer.cancel()
-        self._is_running = False
 
     def _load_conf_data(self):
         with open(self.target_file, 'rb') as fd:
