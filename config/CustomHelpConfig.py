@@ -196,7 +196,11 @@ EMBED_MAPPING = dict(
         description="Command names: `{0}ask`".format(BOT_PREFIX),
         color=0x75ebdb,
         fields=[
-            dict(
+       		dict(
+                name="{0}ask".format(BOT_PREFIX),
+                value="Checks that channel's `{0}ask <nightmare>` messages to count the current amount of reacts in every polled nightmare."
+            ),
+		dict(
                 name="{0}ask `<nightmare>`".format(BOT_PREFIX),
                 value="Sends a message with the nightmare information and three emojis for members to react to: *emojis here*. Each member should select either :regional_indicator_s: or :regional_indicator_l: to indicate said nightmare's availability and evolution level, as well as :ballot_box_with_check: to indicate the nightmare is being equipped, in case it needs to be summoned and the assigned summoner is afk for colosseum."
             )
@@ -213,18 +217,5 @@ EMBED_MAPPING = dict(
                     BOT_PREFIX)
             )
         ]
-'''    ),
-    infomore=dict(
-        title="**Nightmare information (more)**",
-        description="Command names: `{0}infomore`, `{0}inmo`".format(BOT_PREFIX),
-        color=0x75ebdb,
-        fields=[
-            dict(
-                name="{0}infomore `<nightmare>`".format(BOT_PREFIX),
-                value="""Will display the inputted nightmare's relevant information, as well as who in the guild owns it, its evolution level and who is equipping it at the moment.
-				Doesn't require the full nightmare name a reduced, unique string of characters for said nightmare is enough.
-                *Note: Lammy is a smol clam, so if your reduced string is not unique to one nightmare and is, in fact, part of more than one nightmare's full name, Lammy will be confused and won't retrieve the information!*"""
-            )
-        ] '''
     )
 )
