@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from time import sleep
 
 from discord.member import Member
+from numpy.testing._private.utils import measure
 
 from config import NightmareData, User
 from NightmareScrapper import nightmare_scrapper
@@ -49,6 +50,10 @@ def get_nm_data_from_message(message):
     if df.empty or len(df) > 1:
         return None
     return NightmareData(**df.iloc[0].to_dict())
+
+def lookup_nms(message):
+    df = nightmare_scrapper.nm_lookup(message)
+    return [NightmareData(**item.to_dict()) for item in df.iloc]
 
 
 def get_nm_assignment_from_message(message, assignments, index_from_order_arr=False, current_order_list=None):

@@ -350,6 +350,19 @@ class Lammy:
             else:
                 await ctx.send("I don't know any nightmare called {}!".format(nm_string))
 
+        @bot.command(name='lookup', brief=Briefs.lookup, help=Helps.lookup, usage=Usages.lookup)
+        async def lookup_nm(ctx: Context, *args):
+            if len(args) == 0:
+                return await ctx.send("Please provide 1 or more arguments for this command!")
+            nm_string = " ".join(args)
+            nms = u.lookup_nms(nm_string)
+            if len(nms) == 0:
+                await ctx.send("Couldn't find any nightmare by that query!")
+            elif len(nms) == 1:
+                await ctx.send(embed=nms[0].embed)
+            else:
+                await ctx.send("Matching Nightmares:\n**{}**".format(", ".join(nm.name for nm in nms)))
+
         @bot.command(name='check', help=Helps.check, brief=Briefs.check, usage=Usages.check)
         async def check(ctx: Context, *args):
             if len(args) == 0:

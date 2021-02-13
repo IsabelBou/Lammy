@@ -22,6 +22,7 @@ class Helps:
     update = ""
     ask = ""
     check = ""
+    lookup = ""
 
 
 class Usages:
@@ -44,6 +45,7 @@ class Usages:
     update = ""
     ask = ""
     check = ""
+    lookup = ""
 
 
 class Briefs:
@@ -66,3 +68,4 @@ class Briefs:
     update = ""
     ask = ""
     check = ""
+    lookup = ""

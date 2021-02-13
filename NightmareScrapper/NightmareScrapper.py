@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from threading import Thread, main_thread
 
+import numpy as np
 import pandas as pd
 
 from NightmareScrapper.config import (ATTRIBUTE_TO_COLOR_MAPPING, NM_JSON_URL,
@@ -38,6 +39,15 @@ class NightmareScrapper:
     def find_nm(self, search_string: str) -> pd.DataFrame:
         data = self.nm_data
         return data[data.name.str.contains(search_string, regex=False, case=False)]
+
+    def nm_lookup(self, search_string: str) -> pd.DataFrame:
+        data = self.nm_data
+        return data[
+            np.logical_or.reduce([
+                data[prop].str.contains(search_string, regex=False, case=False)
+                for prop in ('name', 'description', 'skill_name')
+            ])
+        ]
 
     @staticmethod
     def _get_nm_dataframe():
