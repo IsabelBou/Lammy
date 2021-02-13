@@ -31,6 +31,8 @@ class Lammy:
         self.retards = 0  # Summon delay of players summoning nightmares
         self.demon1 = None
         self.demon2 = None
+        self.channel_data = (None, None)  # Tuple of (channel_id, guild_id)
+        self.start_bot_waiting = None
         self.nm_order = initial_order
         # Variable for use during colosseum to indicate index of current nightmare
         self.current_nm_order_index = 0
@@ -74,6 +76,10 @@ class Lammy:
         await asyncio.sleep(interval.total_seconds())
 
     @property
+    def guild(self):
+        return self.bot.get_guild(self.channel_data[1])
+
+    @property
     def current_assignment(self):
         return self.assignments[self.current_nm_order[self.current_nm_order_index]]
 
@@ -86,6 +92,8 @@ class Lammy:
         def decorator(func):
             @wraps(func)
             async def __inner(ctx: Context, *args, **kwargs):
+                if ctx is None:
+                    return await func(ctx, *args, **kwargs)
                 author = ctx.author
                 if u.user_is_permitted(author, self.admin_roles):
                     return await func(ctx, *args, **kwargs)
@@ -196,9 +204,19 @@ class Lammy:
                 self.demon_task.cancel()
             except:
                 pass
-            self.colo_task = bot.loop.create_task(colosseum(ctx))
-            self.demon_task = bot.loop.create_task(demon(ctx))
-            await ctx.send("Started waiting for colo to start!")
+            if ctx is not None:
+                self.channel_data = (ctx.channel.id, ctx.guild.id)
+            while not len(bot.guilds):
+                await asyncio.sleep(1)
+            channel = self.guild.get_channel(self.channel_data[0])
+            self.colo_task = bot.loop.create_task(colosseum())
+            self.demon_task = bot.loop.create_task(demon())
+            await channel.send("Started waiting for colo to start!")
+        self.start_bot_waiting = start
+
+        @bot.command(name="f")
+        async def a(ctx):
+            return await ctx.send("Color: {0}. demon: {1}".format(self.colo_task is not None, self.demon_task is not None))
 
         @bot.command(name="afk", help=Helps.afk, brief=Briefs.afk, usage=Usages.afk)
         @self.requires_member_role
@@ -247,18 +265,20 @@ class Lammy:
                 except ValueError:
                     await ctx.send("Please give me the time in this format\nHH:MM (for example, {})".format(stringify_time(self.colo_time)))
 
-        async def colosseum(ctx):
+        async def colosseum():
             u.log(u.getString('task_initiated',
                               'info', None), has_to_print)
-            roles = list(ctx.guild.roles)
+            guild = self.guild
+            roles = list(guild.roles)
+            channel = guild.get_channel(self.channel_data[0])
             while not bot.is_closed():
                 await self.wait_for_colo()
                 current_nm = self.current_assignment
                 is_player_afk = current_nm.user in self.afks
                 if is_player_afk:
-                    await ctx.send("**{} is afk**, so please someone summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
+                    await channel.send("**{} is afk**, so please someone summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
                 else:
-                    await ctx.send("**{}**, summon {}".format(current_nm.user.mention, current_nm.nm.name))
+                    await channel.send("**{}**, summon {}".format(current_nm.user.mention, current_nm.nm.name))
                 # coge índice de pesadilla de la matriz de order -- EN: grab nightmare index from order array
                 for i in range(1, len(self.current_nm_order)):
                     self.current_nm_order_index = i
@@ -272,41 +292,43 @@ class Lammy:
                     current_nm = self.current_assignment
                     is_player_afk = current_nm.user in self.afks
                     if is_player_afk:
-                        await ctx.send("**{} is afk**, so please someone be ready to summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
+                        await channel.send("**{} is afk**, so please someone be ready to summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
                     else:
-                        await ctx.send("**{}**, get ready to summon {}".format(current_nm.user.mention, current_nm.nm.name))
+                        await channel.send("**{}**, get ready to summon {}".format(current_nm.user.mention, current_nm.nm.name))
                     await asyncio.sleep(10)  # wait for the 10 seconds
                     if is_player_afk:
-                        await ctx.send("**{} is afk**, so please someone summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
+                        await channel.send("**{} is afk**, so please someone summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
                     else:
-                        await ctx.send("**{}**, summon {}".format(current_nm.user.mention, current_nm.nm.name))
+                        await channel.send("**{}**, summon {}".format(current_nm.user.mention, current_nm.nm.name))
                 # Everyone is presumed to be not afks each day
                 self.afks = set()
                 # Reset index for tomorrow
                 self.current_nm_order_index = 0
 
-        async def demon(ctx):
-            guild_roles = ctx.guild.roles
+        async def demon():
+            guild = self.guild
+            guild_roles = list(guild.roles)
+            channel = guild.get_channel(self.channel_data[0])
             while not bot.is_closed():
                 #       Notifies guild that colo is starting in 3 minutes (20:57)
                 await self.wait_for_colo(timedelta(minutes=-3))
                 if self.demon1 is None or self.demon2 is None:
-                    await ctx.send("pls do demmon thx")
-                await ctx.send(u.getString('colosseum_about_to_start', 'info', u.getRole(guild_roles, GUILD_ROLE_NAME).mention))
+                    await channel.send("pls do demmon thx")
+                await channel.send(u.getString('colosseum_about_to_start', 'info', u.getRole(guild_roles, GUILD_ROLE_NAME).mention))
                 u.log(u.getString('colosseum_about_to_start', 'info',
                                   u.getRole(guild_roles, GUILD_ROLE_NAME).mention), has_to_print)
                 #
                 #       Notifies Vanguards and Rearguards, individually, what the first demon's summoning weapons are (21:03)
                 await self.wait_for_colo(timedelta(minutes=3))
-                await ctx.send(str(u.getRole(guild_roles, GUILD_ROLE_NAME).mention) + ", demon will approach soon!")
-                await ctx.send(str(u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon1 + "r"), 'demon', None) + '**')
-                await ctx.send(str(u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon1 + "v"), 'demon', None) + '**')
+                await channel.send(str(u.getRole(guild_roles, GUILD_ROLE_NAME).mention) + ", demon will approach soon!")
+                await channel.send(str(u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon1 + "r"), 'demon', None) + '**')
+                await channel.send(str(u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon1 + "v"), 'demon', None) + '**')
                 #
                 #       Notifies Vanguards and Rearguards, individually, what the second demon's summoning weapons are (21:12)
                 await self.wait_for_colo(timedelta(minutes=12))
-                await ctx.send(str(u.getRole(guild_roles, GUILD_ROLE_NAME).mention) + ", demon will approach soon!")
-                await ctx.send(str(u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon2 + "r"), 'demon', None) + '**')
-                await ctx.send(str(u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon2 + "v"), 'demon', None) + '**')
+                await channel.send(str(u.getRole(guild_roles, GUILD_ROLE_NAME).mention) + ", demon will approach soon!")
+                await channel.send(str(u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon2 + "r"), 'demon', None) + '**')
+                await channel.send(str(u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon2 + "v"), 'demon', None) + '**')
                 self.demon1 = None
                 self.demon2 = None
 
