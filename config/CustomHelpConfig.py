@@ -211,6 +211,17 @@ EMBED_MAPPING = dict(
             )
         ]
     ),
+    update=dict(
+        title="**Update**",
+        description="Command names: `{0}Update`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+       		dict(
+                name="{0}ask".format(BOT_PREFIX),
+                value="Instantly checks the datamine source to update the supplied nightmare information."
+            )
+        ]
+    ),
     check=dict(
         title="**Check nightmare availability in the guild**",
         description="Command names: `{0}check`".format(BOT_PREFIX),
