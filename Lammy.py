@@ -510,7 +510,7 @@ class Lammy:
                 return "No assignments data :("
             final_string = ''
             for assignment in self.assignments:
-                final_string += "**{}** (assigned to {}). Lasts {} seconds, takes {} seconds and {} sp.\n".format(assignment.nm.name,
+                final_string += "**{}** (assigned to {}). Preparation time is {} seconds, active duration is {} seconds and requires {} sp.\n".format(assignment.nm.name,
                                                                                                                   assignment.user.name, assignment.nm.duration, assignment.nm.lead_time, assignment.nm.sp)
             return final_string
 
