@@ -13,7 +13,8 @@ EMBED_MAPPING = dict(
             ),
             dict(
                 name="{0}Assignment `<nightmare>` `<user>`".format(BOT_PREFIX),
-                value="""Assigns a nightmare to the user, which will be later referenced during shotcalling with the `{0}order` command.
+                value="""Assigns a nightmare to the user, 
+		which will be later referenced during shotcalling with the `{0}order` command.
                         If the user is already in the assignment list with a different nightmare, it will be updated with the new one.
                         Likewise, if the command specifies a different user for an already assigned nightmare, its summoner will be updated.
                         *Note: You can also use the command by swapping the parameters, there's no need to do it in a specific order!*""".format(BOT_PREFIX)
@@ -166,6 +167,10 @@ EMBED_MAPPING = dict(
             dict(
                 name="{0}afk `<user>`".format(BOT_PREFIX),
                 value="Sets the inputted user as afk for the current colosseum match. If the user was assigned a nightmare, members equipping said nightmare will be pinged instead"
+            ),		
+            dict(
+                name="{0}afk -r `<user>`".format(BOT_PREFIX),
+                value="If the user was set as afk, said user will be removed from the afk list and will be pinged for their assigned nightmare summoning."
             )
         ]
     ),
