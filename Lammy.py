@@ -211,7 +211,7 @@ class Lammy:
             channel = self.guild.get_channel(self.channel_data[0])
             self.colo_task = bot.loop.create_task(colosseum())
             self.demon_task = bot.loop.create_task(demon())
-            await channel.send("Started waiting for colo to start!")
+            await channel.send("Waiting for colosseum to start!")
         self.start_bot_waiting = start
 
         @bot.command(name="f")
@@ -227,12 +227,12 @@ class Lammy:
             async def handle_adding_user(user: str):
                 user = u.get_user_from_username(user, ctx)
                 if not user:  # Shouldn't happen
-                    return await ctx.send("I can't find user {} for some reason.... Please ask admins for help!".format(user.name))
+                    return await ctx.send("I can't find user {} for some reason... Please ask admins for help!".format(user.name))
                 self.afks.add(user)
                 await ctx.send("Successfully set {} as afk for the next colo!".format(user.name))
 
             if len(args) == 0:
-                await ctx.send("Current afks are:\n{}".format(stringify_afks()))
+                await ctx.send("Current afk players are:\n{}".format(stringify_afks()))
             elif args[0].lower() in ("self", "me"):
                 author = ctx.author
                 await handle_adding_user(author.name)
@@ -240,11 +240,11 @@ class Lammy:
                 author = ctx.author
                 user = u.get_user_from_username(author.name, ctx)
                 if not user:  # Shouldn't happen
-                    return await ctx.send("I can't find user {} for some reason.... Please ask admins for help!".format(author.name))
+                    return await ctx.send("I can't find user {} for some reason... Please ask admins for help!".format(author.name))
                 if user not in self.afks:
-                    return await ctx.send("User {} not set as afk in the fist place!".format(user.name))
+                    return await ctx.send("User {} was not set as afk in the first place!".format(user.name))
                 self.afks.remove(user)
-                await ctx.send("Successfully set {} as active for the next colo!".format(user.name))
+                await ctx.send("Successfully removed {}'s afk status for next colosseum!".format(user.name))
             else:
                 user_str = ' '.join(args)
                 await handle_adding_user(user_str)
@@ -255,13 +255,13 @@ class Lammy:
                 return time_obj.strftime("%H:%M")
 
             if len(args) == 0:
-                await ctx.send("Current colo time is set to {} GMT (UTC+0)".format(stringify_time(self.colo_time)))
+                await ctx.send("Current colosseum time is set to {} GMT (UTC+0)".format(stringify_time(self.colo_time)))
             elif not u.user_is_permitted(ctx.author, self.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             else:
                 try:
                     self.colo_time = datetime.strptime(args[0], "%H:%M").replace(tzinfo=timezone.utc).timetz()
-                    await ctx.send("Colo time set as {}!".format(stringify_time(self.colo_time)))
+                    await ctx.send("Colosseum time set as {}!".format(stringify_time(self.colo_time)))
                 except ValueError:
                     await ctx.send("Please give me the time in this format\nHH:MM (for example, {})".format(stringify_time(self.colo_time)))
 
@@ -276,7 +276,7 @@ class Lammy:
                 current_nm = self.current_assignment
                 is_player_afk = current_nm.user in self.afks
                 if is_player_afk:
-                    await channel.send("**{} is afk**, so please someone summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
+                    await channel.send("**{} is afk**, so someone please summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
                 else:
                     await channel.send("**{}**, summon {}".format(current_nm.user.mention, current_nm.nm.name))
                 # coge índice de pesadilla de la matriz de order -- EN: grab nightmare index from order array
@@ -292,12 +292,12 @@ class Lammy:
                     current_nm = self.current_assignment
                     is_player_afk = current_nm.user in self.afks
                     if is_player_afk:
-                        await channel.send("**{} is afk**, so please someone be ready to summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
+                        await channel.send("**{} is afk**, so please someone get ready to summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
                     else:
                         await channel.send("**{}**, get ready to summon {}".format(current_nm.user.mention, current_nm.nm.name))
                     await asyncio.sleep(10)  # wait for the 10 seconds
                     if is_player_afk:
-                        await channel.send("**{} is afk**, so please someone summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
+                        await channel.send("**{} is afk**, so someone please summon {}".format(current_nm.user.name, u.get_nm_mention(roles, current_nm.nm)))
                     else:
                         await channel.send("**{}**, summon {}".format(current_nm.user.mention, current_nm.nm.name))
                 # Everyone is presumed to be not afks each day
@@ -313,7 +313,7 @@ class Lammy:
                 #       Notifies guild that colo is starting in 3 minutes (20:57)
                 await self.wait_for_colo(timedelta(minutes=-3))
                 if self.demon1 is None or self.demon2 is None:
-                    await channel.send("pls do demmon thx")
+                    await channel.send("Colosseum is about to start, please set today's demons!")
                 await channel.send(u.getString('colosseum_about_to_start', 'info', u.getRole(guild_roles, GUILD_ROLE_NAME).mention))
                 u.log(u.getString('colosseum_about_to_start', 'info',
                                   u.getRole(guild_roles, GUILD_ROLE_NAME).mention), has_to_print)
@@ -464,7 +464,7 @@ class Lammy:
                     return await ctx.send("I don't have any assignment for {}!\nPlease check the assignments using `{}assignment`".format(nm_string, BOT_PREFIX))
                 try:
                     self.assignments.remove(assignment)
-                    await ctx.send("Successfully remove {} from assignments!".format(assignment.nm.name))
+                    await ctx.send("Successfully removed {} from the assignment list!".format(assignment.nm.name))
                 except ValueError:
                     await ctx.send("{} doesn't have an assignment! Please make sure it's in the assignment list using `{}assignment`".format(nm_string, BOT_PREFIX))
             else:
@@ -501,9 +501,9 @@ class Lammy:
                         user_already_exists.user = user
                     else:
                         self.assignments.append(AssignmentData(nm, user))
-                    await ctx.send("Successfully updated assignments!\nNow they look like this:\n{}".format(assignments_string()))
+                    await ctx.send("Successfully updated assignments!\nThis is what the assignment list looks like now:\n{}".format(assignments_string()))
                 except ValueError:
-                    await ctx.send("Please provide 2 arguments! First the Name of the nightmare, then the name of the user!\n(For names with spaces use quotes)")
+                    await ctx.send("Please provide 2 arguments! First the name of the nightmare, then the name of the user!\n(For names with spaces use quotes)")
 
         def assignments_string():
             if len(self.assignments) == 0:
@@ -547,7 +547,7 @@ class Lammy:
                 except ValueError:
                     pass
                 self.current_nm_order[self.current_nm_order_index] = chosen_nm_assignments_index
-                await ctx.send("Next nightmare is set as {}, and now the nightmare order is:\n{} ".format(self.current_assignment.nm.name, get_current_nightmare_order()))
+                await ctx.send("Next nightmare is {}! Now the nightmare order is:\n{} ".format(self.current_assignment.nm.name, get_current_nightmare_order()))
 
         @bot.command(name="push", aliases=["p"], help=Helps.push, brief=Briefs.push, usage=Usages.push)
         @self.requires_admin_role
@@ -569,7 +569,7 @@ class Lammy:
                 current_nm_order_index = self.current_nm_order_index
                 self.current_nm_order.insert(
                     current_nm_order_index, chosen_nm_assignments_index)
-                await ctx.send("Next nightmare is set as {}, and now the nightmare order is:\n{} ".format(self.current_assignment.nm.name, get_current_nightmare_order()))
+                await ctx.send("Next set nightmare is {}! Now the nightmare order is:\n{} ".format(self.current_assignment.nm.name, get_current_nightmare_order()))
 
         @bot.command(name='delay', help=Helps.delay, brief=Briefs.delay, usage=Usages.delay)
         @self.requires_admin_role
@@ -600,7 +600,7 @@ class Lammy:
                 assignment = u.get_nm_assignment_from_message(" ".join(args), self.assignments)
                 nm_string = " ".join(args[1:])
                 if assignment is None:
-                    return ctx.send("I don't have any assignment data for {}!\nCheck that assignments with `{}assignment`".format(nm_string, BOT_PREFIX))
+                    return ctx.send("I don't have any assignment data for {}!\nCheck the assignment list with `{}assignment`".format(nm_string, BOT_PREFIX))
                 return await push_summon(ctx, *args)
             elif not u.user_is_permitted(ctx.author, self.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
@@ -608,13 +608,13 @@ class Lammy:
                 nm_string = " ".join(args[1:])
                 assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
                 if assignment is None:
-                    return ctx.send("I don't have any assignment data for {}!\nCheck that assignments with `{}assignment`".format(nm_string, BOT_PREFIX))
+                    return ctx.send("I don't have any assignment data for {}!\nCheck the assignment list with `{}assignment`".format(nm_string, BOT_PREFIX))
                 assignment_index = self.assignments.index(assignment)
                 try:
                     self.current_nm_order.remove(assignment_index)
-                    await ctx.send("Successfully removed {} from order list!".format(assignment.nm.name))
+                    await ctx.send("Successfully removed {} from the summoning order list!".format(assignment.nm.name))
                 except ValueError:
-                    await ctx.send("{} isn't in the order list!\nCheck the order list with `{}order`".format(assignment.nm.name, BOT_PREFIX))
+                    await ctx.send("{} isn't in the summoning order list!\nCheck the order list with `{}order`".format(assignment.nm.name, BOT_PREFIX))
             else:
                 nm1, nm2 = starmap(u.get_nm_assignment_from_message, zip(
                     args, (self.assignments,) * 2, (True,) * 2, (self.current_nm_order, ) * 2))
@@ -638,12 +638,12 @@ class Lammy:
                     self.current_nm_order[nm1_order_index] = nm2_assignment_index
                 if nm2_order_index is not None:
                     self.current_nm_order[nm2_order_index] = nm1_assignment_index
-                await ctx.send("Successfully changed nightmare order!\nCurrent nightmare order is:\n{}".format(get_current_nightmare_order()))
+                await ctx.send("Successfully changed nightmare summoning order!\nCurrent nightmare order is:\n{}".format(get_current_nightmare_order()))
 
         @bot.command(name="update", aliases=['u'],  brief=Briefs.update, help=Helps.update, usage=Usages.update)
         @self.requires_admin_role
         async def force_update_nms(ctx: Context):
-            await ctx.send("Updating nightmare data now....")
+            await ctx.send("Updating nightmare data now...")
             u.nightmare_scrapper.reload_nm_data()
             await ctx.send("Finished updating nightmare data! Now everything's up to date!")
 
