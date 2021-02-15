@@ -128,7 +128,7 @@ class Lammy:
                 await ctx.send("I don't know that command!")
             else:
                 traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-                await ctx.send("Something's wrong! tell Lammy's managment team that I got a {}".format(error))
+                await ctx.send("Something's wrong! tell Lammy's administrators that I got this: {}".format(error))
 
         async def message_from_payload(payload) -> Message:
             return await bot.get_channel(payload.channel_id).get_partial_message(payload.message_id).fetch()
