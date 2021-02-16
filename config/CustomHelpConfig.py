@@ -13,7 +13,8 @@ EMBED_MAPPING = dict(
             ),
             dict(
                 name="{0}Assignment `<nightmare>` `<user>`".format(BOT_PREFIX),
-                value="""Assigns a nightmare to the user, which will be later referenced during shotcalling with the `{0}order` command.
+                value="""Assigns a nightmare to the user, 
+		which will be later referenced during shotcalling with the `{0}order` command.
                         If the user is already in the assignment list with a different nightmare, it will be updated with the new one.
                         Likewise, if the command specifies a different user for an already assigned nightmare, its summoner will be updated.
                         *Note: You can also use the command by swapping the parameters, there's no need to do it in a specific order!*""".format(BOT_PREFIX)
@@ -166,6 +167,10 @@ EMBED_MAPPING = dict(
             dict(
                 name="{0}afk `<user>`".format(BOT_PREFIX),
                 value="Sets the inputted user as afk for the current colosseum match. If the user was assigned a nightmare, members equipping said nightmare will be pinged instead"
+            ),		
+            dict(
+                name="{0}afk -r `<user>`".format(BOT_PREFIX),
+                value="If the user was set as afk, said user will be removed from the afk list and will be pinged for their assigned nightmare summoning."
             )
         ]
     ),
@@ -203,6 +208,17 @@ EMBED_MAPPING = dict(
 		dict(
                 name="{0}ask `<nightmare>`".format(BOT_PREFIX),
                 value="Sends a message with the nightmare information and three emojis for members to react to: *emojis here*. Each member should select either :regional_indicator_s: or :regional_indicator_l: to indicate said nightmare's availability and evolution level, as well as :ballot_box_with_check: to indicate the nightmare is being equipped, in case it needs to be summoned and the assigned summoner is afk for colosseum."
+            )
+        ]
+    ),
+    update=dict(
+        title="**Update**",
+        description="Command names: `{0}Update`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+       		dict(
+                name="{0}ask".format(BOT_PREFIX),
+                value="Instantly checks the datamine source to update the supplied nightmare information."
             )
         ]
     ),

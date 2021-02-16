@@ -14,8 +14,8 @@ class CustomHelpCommand(DefaultHelpCommand):
         embed.add_field(name="Initial Setup", value="*`setadmin`*, *`setmembers`*, *`time`*", inline=False)
         embed.add_field(name="Colosseum demon settings",
                         value="`demonlist`, *`setdemons`*, `getdemons`, `demonsrearguard`, `demonsvanguard`", inline=False)
-        embed.add_field(name="Nightmare Assignments", value="`assignment`, `nightmares`, `info`, `check`, *`ask`*", inline=False)
-        embed.add_field(name="Colosseum actions", value="*`start`*, *`delay`*, *`push`*, *`replace`*, *`stop`*", inline=False)
+        embed.add_field(name="Nightmare Assignments", value="`assignment`, `nightmares`, `info`, `update`, `check`, *`ask`*", inline=False)
+        embed.add_field(name="Colosseum actions", value="*`afk`*, *`start`*, *`delay`*, *`push`*, *`replace`*, *`stop`*", inline=False)
         await destination.send(embed=embed)
 
     async def send_command_help(self, command: Command):
