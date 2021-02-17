@@ -511,7 +511,7 @@ class Lammy:
             final_string = ''
             for assignment in self.assignments:
                 final_string += "**{}** (assigned to {}). Preparation time is {} seconds, active duration is {} seconds and requires {} SP.\n".format(assignment.nm.name,
-                                                                                                                  assignment.user.name, assignment.nm.duration, assignment.nm.lead_time, assignment.nm.sp)
+                                                                                                                  assignment.user.name, assignment.nm.lead_time, assignment.nm.duration, assignment.nm.sp)
             return final_string
 
         def equipped_nms_string(nm: NightmareData):
@@ -586,7 +586,7 @@ class Lammy:
             for order_index, nm_index in enumerate(self.current_nm_order):
                 assignment = self.assignments[nm_index]
                 final_string += "`{}`\t**{}** (assigned to {}). Preparation time is {} seconds, active duration is {} seconds and requires {} SP.\n".format(
-                    order_index, assignment.nm.name, assignment.user.name, assignment.nm.duration, assignment.nm.lead_time, assignment.nm.sp)
+                    order_index, assignment.nm.name, assignment.user.name, assignment.nm.lead_time, assignment.nm.duration, assignment.nm.sp)
                 time_sum += assignment.nm.lead_time + assignment.nm.duration
             final_string += "**Total Time**: {0} seconds ({1}).\n".format(time_sum, timedelta(seconds=int(time_sum)))
             return final_string
