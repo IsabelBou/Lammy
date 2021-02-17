@@ -68,4 +68,4 @@ class NightmareScrapper:
             merged_data = merged_data[["sp", "duration", "name_x", "name_y", "description_y", "cardMstId", "leadTime", "attribute"]]
             merged_data["color"] = merged_data["attribute"].map(ATTRIBUTE_TO_COLOR_MAPPING)
             del merged_data["attribute"]
-            return merged_data.rename(columns=dict(name_x="name", description_y="description", cardMstId="card_id", name_y="skill_name", leadTime="lead_time"))
+            return merged_data.rename(columns=dict(name_x="name", description_y="description", cardMstId="card_id", name_y="skill_name", duration="lead_time", leadTime="duration"))

@@ -51,6 +51,7 @@ def get_nm_data_from_message(message):
         return None
     return NightmareData(**df.iloc[0].to_dict())
 
+
 def lookup_nms(message):
     df = nightmare_scrapper.nm_lookup(message)
     return [NightmareData(**item.to_dict()) for item in df.iloc]
