@@ -18,7 +18,11 @@ EMBED_MAPPING = dict(
                         If the user is already in the assignment list with a different nightmare, it will be updated with the new one.
                         Likewise, if the command specifies a different user for an already assigned nightmare, its summoner will be updated.
                         *Note: You can also use the command by swapping the parameters, there's no need to do it in a specific order!*""".format(BOT_PREFIX)
-            )
+            ),
+            dict(
+                name="{0}Assignment -r `<Nightmare/user>`".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Removes the inputted nightmare or user from the assignment list, if they were part of it."
+	    )
         ]
     ),
     setdemons=dict(
@@ -98,9 +102,13 @@ EMBED_MAPPING = dict(
         color=0x75ebdb,
         fields=[
             dict(
-                name="{0}setadmin `<role>`".format(BOT_PREFIX),
-                value="*Admin-exclusive command.* Sets a role as an administrator for Lammy. Only Lammy admins can use admin-exclusive commands, such as modifying `{0}assigments`, `{0}order` or `{0}setdemons`".format(
-                    BOT_PREFIX)
+                name="{0}setadmin `<role/user>`".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Sets a role/user as an administrator for Lammy. Only Lammy admins can use admin-exclusive commands, such as modifying `{0}assigments`, `{0}order` or `{0}setdemons`".format(
+                    BOT_PREFIX)            
+	    ),		
+            dict(
+                name="{0}setadmin -r `<role/user>`".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Removes admin capabilities from a role/user, if they had them in the first place."
             )
         ]
     ),
@@ -130,6 +138,10 @@ EMBED_MAPPING = dict(
                 value="""*Admin-exclusive command.* Adds the inputted nightmares to the order, if they weren't already part of it
                         *Note: the inputted nightmares must have an assigned summoner first, which can be set with the command ´{0}assignment <nightmare> <user>´. Otherwise, Lammy wouldn't know who to ping when their summoning time comes!*
 						*Note 2: If used during colosseum with two nightmares as parameters, it will swap their positions in the rotation.*""".format(BOT_PREFIX)
+            ),
+            dict(
+                name="{0}order -r `<Nightmare/user>`".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Removes the inputted nightmare or user from the order list, if they were part of it."
             )
         ]
     ),
