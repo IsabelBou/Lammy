@@ -214,10 +214,6 @@ class Lammy:
             await channel.send("Waiting for colosseum to start!")
         self.start_bot_waiting = start
 
-        @bot.command(name="f")
-        async def a(ctx):
-            return await ctx.send("Color: {0}. demon: {1}".format(self.colo_task is not None, self.demon_task is not None))
-
         @bot.command(name="afk", help=Helps.afk, brief=Briefs.afk, usage=Usages.afk)
         @self.requires_member_role
         async def afk(ctx: Context, *args):
