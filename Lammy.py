@@ -7,7 +7,10 @@ from functools import wraps
 from itertools import groupby, starmap
 from typing import Dict, List
 
-from discord import Game, Message
+from discord import Game, Guild
+from discord import Member as DiscordMember
+from discord import Message, Role
+from discord import User as DiscordUser
 from discord.ext.commands import Bot, CommandNotFound, Context
 
 import Utils as u
@@ -135,6 +138,7 @@ class Lammy:
 
         async def update_equiped_nms_from_message(message: Message):
             lammy_mention = bot.user.mention
+
             if message.author.mention != lammy_mention or not message.embeds:
                 return
             nm = u.get_nm_data_from_message(message.embeds[0].title)
@@ -145,7 +149,29 @@ class Lammy:
                     emoji = Emojis(str(reaction.emoji))
                 except ValueError:
                     continue
-                self.equipped_nms[nm][emoji] = [User(user.display_name, user.mention) async for user in reaction.users() if user.mention != lammy_mention]
+                users = [user async for user in reaction.users() if user.mention != lammy_mention and isinstance(user, DiscordMember)]
+                self.equipped_nms[nm][emoji] = [User(user.display_name, user.mention) for user in users]
+                await update_users_roles_by_nm(nm, users, message.guild)
+
+        async def update_users_roles_by_nm(nm: NightmareData, users: List[DiscordMember], guild: Guild):
+            await guild.fetch_roles()
+            for user in users:
+                if user_has_nm_role(nm, user):
+                    continue
+                role = await get_or_create_role_of_nm(nm, user, guild)
+                await user.add_roles(role)
+
+        async def get_or_create_role_of_nm(nm: NightmareData, guild: Guild) -> Role:
+            for role in guild.roles:
+                if role.name == nm.short_name:
+                    return role
+            return await guild.create_role(name=nm.short_name, colour=nm.color, mentionable=True)
+
+        def user_has_nm_role(nm: NightmareData, user: User) -> bool:
+            for role in user.roles:
+                if role.name == nm.short_name and role.is_bot_managed():
+                    return True
+            return False
 
         @bot.event
         async def on_raw_reaction_add(payload):
@@ -357,7 +383,7 @@ class Lammy:
             elif len(nms) == 1:
                 await ctx.send(embed=nms[0].embed)
             else:
-                await ctx.send(f"Matching Nightmares:\n**{", ".join(nm.name for nm in nms)}**")
+                await ctx.send(f"Matching Nightmares:\n**{', '.join(nm.name for nm in nms)}**")
 
         @bot.command(name='check', help=Helps.check, brief=Briefs.check, usage=Usages.check)
         async def check(ctx: Context, *args):

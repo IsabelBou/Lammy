@@ -1,6 +1,8 @@
-from dataclasses import dataclass
+import dataclasses
+from dataclasses import dataclass, field
+from typing import List
 
-from discord.embeds import Embed
+from discord import Embed, Role
 from numpy import int
 
 
@@ -9,6 +11,7 @@ class NightmareData:
     sp: int
     duration: int
     name: str
+    short_name: str
     description: str
     card_id: str
     skill_name: str
