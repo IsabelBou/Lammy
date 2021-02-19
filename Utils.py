@@ -151,8 +151,8 @@ def log(message, hasToPrint):
 
 def err(message, hasToPrint):
     if hasToPrint:
-        print("\033[91m{}\033[0m".format(message))
+        print(f"\033[91m{message}\033[0m")
 
     err = str(date.datetime.now()) + ' | ' + message
     with open("Lammy_log", "a") as f:
-        f.writelines("'ERROR: {}'".format(err))
+        f.writelines(f"'ERROR: {err}'")

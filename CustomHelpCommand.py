@@ -10,7 +10,7 @@ class CustomHelpCommand(DefaultHelpCommand):
     async def send_bot_help(self, mapping):
         destination = self.get_destination()
         embed = Embed(title="**Lammy's Instructions**",
-                      description="Use `{}help [command]` for more info on a command.\nThe ones in italics are usable by *`admins only`*".format(BOT_PREFIX), color=0x75ebdb)
+                      description=f"Use `{BOT_PREFIX}help [command]` for more info on a command.\nThe ones in italics are usable by *`admins only`*", color=0x75ebdb)
         embed.add_field(name="Initial Setup", value="*`setadmin`*, *`setmembers`*, *`time`*", inline=False)
         embed.add_field(name="Colosseum demon settings",
                         value="`demonlist`, *`setdemons`*, `getdemons`, `demonsrearguard`, `demonsvanguard`", inline=False)
