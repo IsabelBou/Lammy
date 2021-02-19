@@ -10,7 +10,6 @@ from typing import Dict, List
 from discord import Game, Guild
 from discord import Member as DiscordMember
 from discord import Message, Role
-from discord import User as DiscordUser
 from discord.ext.commands import Bot, CommandNotFound, Context
 
 import Utils as u
@@ -144,6 +143,7 @@ class Lammy:
             nm = u.get_nm_data_from_message(message.embeds[0].title)
             if nm not in self.equipped_nms:
                 self.equipped_nms[nm] = {emoji: list() for emoji in Emojis}
+            all_users_who_reacted = set()
             for reaction in message.reactions:
                 try:
                     emoji = Emojis(str(reaction.emoji))
@@ -151,25 +151,30 @@ class Lammy:
                     continue
                 users = [user async for user in reaction.users() if user.mention != lammy_mention and isinstance(user, DiscordMember)]
                 self.equipped_nms[nm][emoji] = [User(user.display_name, user.mention) for user in users]
-                await update_users_roles_by_nm(nm, users, message.guild)
+                all_users_who_reacted.update(users)
+            await update_users_roles_by_nm(nm, all_users_who_reacted, message.guild)
 
-        async def update_users_roles_by_nm(nm: NightmareData, users: List[DiscordMember], guild: Guild):
+        async def update_users_roles_by_nm(nm: NightmareData, members: List[DiscordMember], guild: Guild):
             await guild.fetch_roles()
-            for user in users:
-                if user_has_nm_role(nm, user):
+            members_who_dont_have_this_nm: List[DiscordMember] = [member for member in guild.members if member not in members]
+            nm_role = await get_or_create_role_of_nm(nm, guild)
+            for member in members:
+                if member_has_nm_role(nm, member):
                     continue
-                role = await get_or_create_role_of_nm(nm, user, guild)
-                await user.add_roles(role)
+                await member.add_roles(nm_role)
+            for member in members_who_dont_have_this_nm:
+                if member_has_nm_role(nm, member):
+                    await member.remove_roles(nm_role)
 
         async def get_or_create_role_of_nm(nm: NightmareData, guild: Guild) -> Role:
             for role in guild.roles:
                 if role.name == nm.short_name:
                     return role
-            return await guild.create_role(name=nm.short_name, colour=nm.color, mentionable=True)
+            return await guild.create_role(name=nm.short_name, colour=int(nm.color), mentionable=True)
 
-        def user_has_nm_role(nm: NightmareData, user: User) -> bool:
-            for role in user.roles:
-                if role.name == nm.short_name and role.is_bot_managed():
+        def member_has_nm_role(nm: NightmareData, member: DiscordMember) -> bool:
+            for role in member.roles:
+                if role.name == nm.short_name:
                     return True
             return False
 

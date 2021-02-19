@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import suppress
 from pickle import dump, load
+from traceback import format_exc
 
 from Lammy import Lammy
 
@@ -19,8 +20,11 @@ class ConfigurationSaver:
         await self._run()
 
     async def _start(self):
-        await self._load_conf_data()
-        await self._run()
+        try:
+            await self._load_conf_data()
+            await self._run()
+        except Exception as e:
+            print(format_exc())
 
     def start(self):
         loop = asyncio.get_event_loop()

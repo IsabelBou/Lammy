@@ -1,4 +1,3 @@
-import dataclasses
 from dataclasses import dataclass, field
 from typing import List
 
@@ -11,12 +10,16 @@ class NightmareData:
     sp: int
     duration: int
     name: str
-    short_name: str
     description: str
     card_id: str
     skill_name: str
     lead_time: int
     color: int
+    _short_name: str = field(default=str())
+
+    @property
+    def short_name(self):
+        return self._short_name.split(",")[0].strip()
 
     @property
     def embed(self):

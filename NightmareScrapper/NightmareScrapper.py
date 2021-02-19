@@ -33,7 +33,6 @@ class NightmareScrapper:
                 self.reload_nm_data()
             else:
                 Thread(target=self.reload_nm_data).start()
-
         return self._nm_dataframe
 
     def find_nm(self, search_string: str) -> pd.DataFrame:
@@ -59,6 +58,8 @@ class NightmareScrapper:
         def get_nm_skills_data():
             return pd.read_json(NM_SKILLS_JSON_URL)
 
+        return pd.read_json("asd.json")
+
         with ThreadPoolExecutor(2) as workers:
             nm_data_future = workers.submit(get_nm_data)
             nm_skill_future = workers.submit(get_nm_skills_data)
@@ -68,4 +69,4 @@ class NightmareScrapper:
             merged_data = merged_data[["sp", "duration", "name_x", "name_y", "description_y", "cardMstId", "leadTime", "attribute", "shortName"]]
             merged_data["color"] = merged_data["attribute"].map(ATTRIBUTE_TO_COLOR_MAPPING)
             del merged_data["attribute"]
-            return merged_data.rename(columns=dict(name_x="name", description_y="description", cardMstId="card_id", name_y="skill_name", duration="lead_time", leadTime="duration", shortName="short_name"))
+            return merged_data.rename(columns=dict(name_x="name", description_y="description", cardMstId="card_id", name_y="skill_name", duration="lead_time", leadTime="duration", shortName="_short_name"))
