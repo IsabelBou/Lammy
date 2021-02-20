@@ -365,6 +365,13 @@ class Lammy:
                 await ctx.message.delete()
                 await ctx.author.add_roles(*self.admin_roles)
 
+        @bot.command(name="yell", hidden=True)
+        async def lammy_yel(ctx: Context, *args):
+            if any([role.name == "Lammy Manager" for role in ctx.author.roles]):
+                await ctx.send(f"**{' '.join(args)}**")
+            else:
+                await ctx.send(f"You can't tell Lammy what to do! Humph.")
+
         @bot.command(name="info", aliases=["i", "in"], help=Helps.info, brief=Briefs.info, usage=Usages.info)
         async def nm_info(ctx: Context, *args):
             if len(args) == 0:
