@@ -315,7 +315,7 @@ class Lammy:
                     self.retards = 0
 
                     # duerme el tiempo de esa pesadilla - 10 segundos -- EN: sleep time of that nightmare minus 10 seconds
-                    await asyncio.sleep(abs(int(previous_nm.nm.duration) - 10))
+                    await asyncio.sleep(abs(int(previous_nm.nm.duration + previous_nm.nm.lead_time) - 10))
                     current_nm = self.current_assignment
                     is_player_afk = current_nm.user in self.afks
                     if is_player_afk:
