@@ -25,9 +25,9 @@ class NightmareData:
     def embed(self):
         embed = Embed(title=self.name, color=int(self.color))
         embed.add_field(name=self.skill_name, value=self.description.replace(r"\n", "\n"))
-        embed.add_field(name="Costs {}SP".format(self.sp),
-                        value="Duration: {} seconds.\nLead time: {} seconds.".format(self.duration, self.lead_time))
-        embed.set_image(url="https://sinoalice.game-db.tw/images/card/CardS{}.png".format(str(self.card_id).rjust(4, '0')))
+        embed.add_field(name=f"Costs {self.sp}SP",
+                        value=f"Duration: {self.duration} seconds.\nLead time: {self.lead_time} seconds.")
+        embed.set_image(url=f"https://sinoalice.game-db.tw/images/card/CardS{str(self.card_id).rjust(4, '0')}.png")
         return embed
 
 

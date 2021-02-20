@@ -613,7 +613,7 @@ class Lammy:
             for order_index, nm_index in enumerate(self.current_nm_order):
                 assignment = self.assignments[nm_index]
                 final_string += f"`{order_index}`\t**{assignment.nm.name}** (assigned to {assignment.user.name}). "\
-                    f" Preparation time is {assignment.nm.lead_time} seconds, active duration is {assignment.nm.duration} seconds and requires {assignment.nm.sp} SP.\n"
+                    f"Preparation time is {assignment.nm.lead_time} seconds, active duration is {assignment.nm.duration} seconds and requires {assignment.nm.sp} SP.\n"
                 time_sum += assignment.nm.lead_time + assignment.nm.duration
             final_string += f"**Total Time**: {time_sum} seconds ({timedelta(seconds=int(time_sum))}).\n"
             return final_string
