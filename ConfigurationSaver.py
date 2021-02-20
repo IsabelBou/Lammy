@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import suppress
 from pickle import dump, load
-from traceback import format_exc
+from traceback import print_exc
 
 from Lammy import Lammy
 
@@ -14,17 +14,17 @@ class ConfigurationSaver:
         self._running_bot = bot
 
     async def _run(self):
-        await asyncio.sleep(self._interval)
-        with open(self.target_file, "wb") as fd:
-            dump(self._conf_data, fd)
-        await self._run()
+        while True:
+            await asyncio.sleep(self._interval)
+            with open(self.target_file, "wb") as fd:
+                dump(self._conf_data, fd)
 
     async def _start(self):
         try:
             await self._load_conf_data()
             await self._run()
         except Exception as e:
-            print(format_exc())
+            print_exc()
 
     def start(self):
         loop = asyncio.get_event_loop()

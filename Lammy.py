@@ -129,7 +129,7 @@ class Lammy:
             if isinstance(error, CommandNotFound):
                 await ctx.send("I don't know that command!")
             else:
-                traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+                traceback.print_exc()
                 await ctx.send(f"Something's wrong! tell Lammy's administrators that I got this: {error}")
 
         async def message_from_payload(payload) -> Message:
@@ -681,7 +681,7 @@ class Lammy:
                 history = [message for message in await ctx.history(oldest_first=False).flatten() if message.embeds and message.reactions]
                 history.sort(key=lambda message: (message.embeds[0].title, message.created_at))
                 filtered = list()
-                for message, group in groupby(history, key=lambda message: message.embeds[0].title):
+                for _, group in groupby(history, key=lambda message: message.embeds[0].title):
                     group = list(group)
                     filtered.append(group[-1])
                 for message in filtered:
