@@ -388,7 +388,7 @@ class Lammy:
             elif len(nms) == 1:
                 await ctx.send(embed=nms[0].embed)
             else:
-                await ctx.send(f"Matching Nightmares:\n**{', '.join(nm.name for nm in nms)}**")
+                await ctx.send(f"Matching Nightmares:\n**{', '.join(nm.short_name for nm in nms)}**")
 
         @bot.command(name='check', help=Helps.check, brief=Briefs.check, usage=Usages.check)
         async def check(ctx: Context, *args):
