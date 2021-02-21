@@ -61,10 +61,17 @@ class NightmareScrapper:
         with ThreadPoolExecutor(2) as workers:
             nm_data_future = workers.submit(get_nm_data)
             nm_skill_future = workers.submit(get_nm_skills_data)
-            nm_Data = nm_data_future.result()
+            nm_data = nm_data_future.result()
             nm_skill_data = nm_skill_future.result()
-            merged_data = pd.merge(nm_Data, nm_skill_data, on="artMstId")
-            merged_data = merged_data[["sp", "duration", "name_x", "name_y", "description_y", "cardMstId", "leadTime", "attribute", "shortName"]]
+            merged_data = pd.merge(nm_data, nm_skill_data, on="artMstId")
+            merged_story_data = pd.merge(nm_data, nm_skill_data, left_on="questArtMstId", right_on="artMstId")
+            merged_data = merged_data[["sp", "duration", "name_x", "name_y", "description_x",
+                                       "description_y", "cardMstId", "leadTime", "attribute", "shortName"]]
+            merged_data["story_skill_name"] = merged_story_data["name_y"]
+            merged_data["story_skill_sp"] = merged_story_data["sp"]
+            merged_data["story_skill_duration"] = merged_story_data["duration"]
+            merged_data["story_skill_lead_time"] = merged_story_data["leadTime"]
+            merged_data["story_skill_description"] = merged_story_data["description_y"]
             merged_data["color"] = merged_data["attribute"].map(ATTRIBUTE_TO_COLOR_MAPPING)
             del merged_data["attribute"]
-            return merged_data.rename(columns=dict(name_x="name", description_y="description", cardMstId="card_id", name_y="skill_name", leadTime="lead_time", shortName="_short_name"))
+            return merged_data.rename(columns=dict(name_x="name", description_y="skill_description", description_x="description", cardMstId="card_id", name_y="skill_name", leadTime="lead_time", shortName="_short_name"))

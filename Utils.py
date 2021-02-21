@@ -49,12 +49,12 @@ def get_nm_data_from_message(message):
     df = nightmare_scrapper.find_nm(message)
     if df.empty or len(df) > 1:
         return None
-    return NightmareData(**df.iloc[0].to_dict())
+    return NightmareData.from_series(df.iloc[0])
 
 
 def lookup_nms(message):
     df = nightmare_scrapper.nm_lookup(message)
-    return [NightmareData(**item.to_dict()) for item in df.iloc]
+    return [NightmareData.from_series(item) for item in df.iloc]
 
 
 def get_nm_assignment_from_message(message, assignments, index_from_order_arr=False, current_order_list=None):

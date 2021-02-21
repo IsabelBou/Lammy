@@ -315,7 +315,7 @@ class Lammy:
                     self.retards = 0
 
                     # duerme el tiempo de esa pesadilla - 10 segundos -- EN: sleep time of that nightmare minus 10 seconds
-                    await asyncio.sleep(abs(int(previous_nm.nm.duration + previous_nm.nm.lead_time) - 10))
+                    await asyncio.sleep(abs(int(previous_nm.nm.colo_skill.duration + previous_nm.nm.colo_skill.lead_time) - 10))
                     current_nm = self.current_assignment
                     is_player_afk = current_nm.user in self.afks
                     if is_player_afk:
@@ -545,7 +545,7 @@ class Lammy:
             final_string = ''
             for assignment in self.assignments:
                 final_string += f"**{assignment.nm.name}** (assigned to {assignment.user.name}). "\
-                    f"Preparation time is {assignment.nm.lead_time} seconds, active duration is {assignment.nm.duration} seconds and requires {assignment.nm.sp} SP.\n"
+                    f"Preparation time is {assignment.nm.colo_skill.lead_time} seconds, active duration is {assignment.nm.colo_skill.duration} seconds and requires {assignment.nm.colo_skill.sp} SP.\n"
             return final_string
 
         def equipped_nms_string(nm: NightmareData):
@@ -620,8 +620,8 @@ class Lammy:
             for order_index, nm_index in enumerate(self.current_nm_order):
                 assignment = self.assignments[nm_index]
                 final_string += f"`{order_index}`\t**{assignment.nm.name}** (assigned to {assignment.user.name}). "\
-                    f"Preparation time is {assignment.nm.lead_time} seconds, active duration is {assignment.nm.duration} seconds and requires {assignment.nm.sp} SP.\n"
-                time_sum += assignment.nm.lead_time + assignment.nm.duration
+                    f"Preparation time is {assignment.nm.colo_skill.lead_time} seconds, active duration is {assignment.nm.colo_skill.duration} seconds and requires {assignment.nm.colo_skill.sp} SP.\n"
+                time_sum += assignment.nm.colo_skill.lead_time + assignment.nm.colo_skill.duration
             final_string += f"**Total Time**: {time_sum} seconds ({timedelta(seconds=int(time_sum))}).\n"
             return final_string
 
