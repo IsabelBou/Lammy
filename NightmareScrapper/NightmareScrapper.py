@@ -45,7 +45,7 @@ class NightmareScrapper:
         return data[
             np.logical_or.reduce([
                 data[prop].str.contains(search_string, regex=False, case=False)
-                for prop in ('name', 'description', 'skill_name')
+                for prop in ('name', 'skill_description', 'skill_name')
             ])
         ]
 
