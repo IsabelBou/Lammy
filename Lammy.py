@@ -143,7 +143,7 @@ class Lammy:
             nm = u.get_nm_data_from_message(message.embeds[0].title)
             if nm not in self.equipped_nms:
                 self.equipped_nms[nm] = {emoji: list() for emoji in Emojis}
-            all_users_who_reacted = set()
+            users_who_have_equipped = set()
             for reaction in message.reactions:
                 try:
                     emoji = Emojis(str(reaction.emoji))
@@ -151,8 +151,9 @@ class Lammy:
                     continue
                 users = [user async for user in reaction.users() if user.mention != lammy_mention and isinstance(user, DiscordMember)]
                 self.equipped_nms[nm][emoji] = [User(user.display_name, user.mention) for user in users]
-                all_users_who_reacted.update(users)
-            await update_users_roles_by_nm(nm, all_users_who_reacted, message.guild)
+                if emoji is Emojis.V:
+                    users_who_have_equipped.update(users)
+            await update_users_roles_by_nm(nm, users_who_have_equipped, message.guild)
 
         async def update_users_roles_by_nm(nm: NightmareData, members: List[DiscordMember], guild: Guild):
             await guild.fetch_roles()
