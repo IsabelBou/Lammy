@@ -370,6 +370,7 @@ class Lammy:
         async def lammy_yel(ctx: Context, *args):
             if any([role.name == "Lammy Manager" for role in ctx.author.roles]):
                 await ctx.send(f"**{' '.join(args)}**")
+                await ctx.message.delete()
             else:
                 await ctx.send(f"You can't tell Lammy what to do! Humph.")
 
@@ -705,6 +706,7 @@ class Lammy:
                 await message.add_reaction(Emojis.L.value)
                 await message.add_reaction(Emojis.S.value)
                 await message.add_reaction(Emojis.V.value)
+                await ctx.message.delete()
             else:
                 await ctx.send(f"I don't know any nightmare called {nm_string}!")
 
