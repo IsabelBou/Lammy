@@ -24,7 +24,6 @@ class NightmareSkill:
 @dataclass(frozen=True)
 class NightmareData:
     name: str
-    description: str
     card_id: str
     colo_skill: NightmareSkill
     story_skill: NightmareSkill
@@ -41,7 +40,7 @@ class NightmareData:
                                     lead_time=series.lead_time, description=series.skill_description)
         story_skill = NightmareSkill(name=series.story_skill_name, sp=series.story_skill_sp, duration=series.story_skill_duration,
                                      lead_time=series.story_skill_lead_time, description=series.story_skill_description)
-        return cls(name=series.name, description=series.description, card_id=series.card_id,
+        return cls(name=series.name, card_id=series.card_id,
                    color=series.color, _short_name=series.private_short_name, colo_skill=colo_skill, story_skill=story_skill)
 
     @property
@@ -51,7 +50,7 @@ class NightmareData:
     @property
     def embed(self):
         embed = Embed(title=self.name, color=int(self.color))
-        embed.add_field(name=self.colo_skill.name, value=self.description.replace(r"\n", "\n"))
+        embed.add_field(name=self.colo_skill.name, value=self.colo_skill.description.replace(r"\n", "\n"))
         embed.add_field(name=f"Costs {self.colo_skill.sp}SP",
                         value=f"Duration: {self.colo_skill.duration} seconds.\nLead time: {self.colo_skill.lead_time} seconds.")
         embed.set_image(url=f"https://sinoalice.game-db.tw/images/card/CardS{str(self.card_id).rjust(4, '0')}.png")
