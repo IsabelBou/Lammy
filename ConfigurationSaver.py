@@ -17,7 +17,11 @@ class ConfigurationSaver:
         while True:
             await asyncio.sleep(self._interval)
             with open(self.target_file, "wb") as fd:
-                dump(self._conf_data, fd)
+                try:
+                    dump(self._conf_data, fd)
+                except TypeError as e:
+                    print(repr(e))
+                    print(self._conf_data)
 
     async def _start(self):
         try:
