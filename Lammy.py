@@ -123,7 +123,7 @@ class Lammy:
         @bot.event
         async def on_ready():
             await bot.change_presence(activity=Game(f'SINoALICE (and {BOT_PREFIX}help)'))
-        
+
         @bot.event
         async def on_message(message):
             if not self.channel_data[1]:
@@ -318,11 +318,12 @@ class Lammy:
                     self.current_nm_order_index = i
                     previous_nm = self.assignments[self.current_nm_order[i-1]]
 
+                    # duerme el tiempo de esa pesadilla - 10 segundos -- EN: sleep time of that nightmare minus 10 seconds
+                    await asyncio.sleep(abs(int(previous_nm.nm.colo_skill.duration + previous_nm.nm.colo_skill.lead_time) - 10))
+
                     await asyncio.sleep(self.retards)
                     self.retards = 0
 
-                    # duerme el tiempo de esa pesadilla - 10 segundos -- EN: sleep time of that nightmare minus 10 seconds
-                    await asyncio.sleep(abs(int(previous_nm.nm.colo_skill.duration + previous_nm.nm.colo_skill.lead_time) - 10))
                     current_nm = self.current_assignment
                     is_player_afk = current_nm.user in self.afks
                     if is_player_afk:
