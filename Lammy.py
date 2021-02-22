@@ -123,6 +123,12 @@ class Lammy:
         @bot.event
         async def on_ready():
             await bot.change_presence(activity=Game(f'SINoALICE (and {BOT_PREFIX}help)'))
+        
+        @bot.event
+        async def on_message(message):
+            if not self.channel_data[1]:
+                self.channel_data = None, message.guild.id
+            await bot.process_commands(message)
 
         @bot.event
         async def on_command_error(ctx, error):
