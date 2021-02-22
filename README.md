@@ -11,5 +11,6 @@ Bot for Discord servers, designed for the automated management and coordination 
 5. Write down what nightmare is assigned to what user with `!assign <user> <nightmare>`. This list will be used in the next described command.
 6. Set up the initial order of nightmare summoning with `!order <nm1> <nm2> <...>`. Can add nightmares at the start of the list by writing `!order <nm0>`.
 7. Set the colosseum start time (UTC) with `!time <UTCtime>`.
+8. Assign `@Vanguard` and `@Rearguard` roles to corresponding members so they can be pinged with each colosseum's demon weapons at the appointed time.
 
 To check the list of available commands, use `!help`. To check what an individual command does, write `!help <command>`
