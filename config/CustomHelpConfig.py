@@ -222,6 +222,17 @@ EMBED_MAPPING = dict(
                 value="Sends a message with the nightmare information and three emojis for members to react to: *emojis here*. Each member should select either :regional_indicator_s: or :regional_indicator_l: to indicate said nightmare's availability and evolution level, as well as :ballot_box_with_check: to indicate the nightmare is being equipped, in case it needs to be summoned and the assigned summoner is afk for colosseum."
             )
         ]
+    ),    
+    lookup=dict(
+        title="**Look for nightmares**",
+        description="Command names: `{0}lookup`, `{0}l`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+            dict(
+                name="{0}lookup `<description>`".format(BOT_PREFIX),
+                value="Looks for nightmares whose description matches with the string inputted."
+            )
+        ]
     ),
     update=dict(
         title="**Update**",
