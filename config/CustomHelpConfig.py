@@ -197,6 +197,17 @@ EMBED_MAPPING = dict(
             )
         ]
     ),
+    replace=dict(
+        title="**Replace a nightmare**",
+        description="Command names: `{0}replace`, `{0}replacenightmare`, `{0}r`, `{0}rn`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+            dict(
+                name="{0}replace `<Nightmare>`".format(BOT_PREFIX),
+                value="During colo, sets the inputted nightmare, which was already included in the list, as next to be summoned and pushes it into the current order, postponing the rest of the nightmares to be summoned until getting to the inputted nightmare's original psition"
+            )
+        ]
+    ),
     delay=dict(
         title="**Delay the summoning**",
         description="Command names: `{0}delay`, `{0}d`".format(BOT_PREFIX),
