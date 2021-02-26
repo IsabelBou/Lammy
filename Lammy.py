@@ -47,6 +47,9 @@ class Lammy:
 
         self.afks = set()
 
+        self.notification_delay = 10
+        self.sp_notification_delay = 30
+
         self.colo_time = time(20, 00, 0, 0, tzinfo=timezone.utc)
         self.is_sp_colo = False
 
@@ -321,8 +324,12 @@ class Lammy:
                     self.current_nm_order_index = i
                     previous_nm = self.assignments[self.current_nm_order[i-1]]
 
-                    # duerme el tiempo de esa pesadilla - 10 segundos -- EN: sleep time of that nightmare minus 10 seconds
-                    await asyncio.sleep(abs(int(previous_nm.nm.colo_skill.duration + previous_nm.nm.colo_skill.lead_time) - 10))
+                    nm_skill_time = int(previous_nm.nm.colo_skill.duration + previous_nm.nm.colo_skill.lead_time)
+                    notification_delay = self.sp_notification_delay if self.current_assignment.nm.colo_skill.sp else self.notification_delay
+                    if self.is_sp_colo:
+                        nm_skill_time = int(previous_nm.nm.colo_skill.duration) + 5
+                        notification_delay = self.notification_delay
+                    await asyncio.sleep(abs(nm_skill_time - notification_delay))
 
                     await asyncio.sleep(self.retards)
                     self.retards = 0
@@ -333,7 +340,7 @@ class Lammy:
                         await channel.send(f"**{current_nm.user.name} is afk**, so please someone get ready to summon {u.get_nm_mention(roles, current_nm.nm)}")
                     else:
                         await channel.send(f"**{current_nm.user.mention}**, get ready to summon {current_nm.nm.name}")
-                    await asyncio.sleep(10)  # wait for the 10 seconds
+                    await asyncio.sleep(notification_delay)  # wait for the notification delay
                     if is_player_afk:
                         await channel.send(f"**{current_nm.user.name} is afk**, so someone please summon {u.get_nm_mention(roles, current_nm.nm)}")
                     else:
@@ -358,17 +365,43 @@ class Lammy:
                 #
                 #       Notifies Vanguards and Rearguards, individually, what the first demon's summoning weapons are (21:03)
                 await self.wait_for_colo(timedelta(minutes=3))
-                await channel.send(str(u.getRole(guild_roles, GUILD_ROLE_NAME).mention) + ", demon will approach soon!")
-                await channel.send(str(u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon1 + "r"), 'demon', None) + '**')
-                await channel.send(str(u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon1 + "v"), 'demon', None) + '**')
+                await channel.send(f"{u.getRole(guild_roles, GUILD_ROLE_NAME).mention}, demon will approach soon!")
+                await channel.send(f"{u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention} prepare your **{u.getString(str(self.demon1 + 'r'), 'demon', None)}**")
+                await channel.send(f"{u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention} prepare your **{u.getString(str(self.demon1 + 'v'), 'demon', None)}**")
                 #
                 #       Notifies Vanguards and Rearguards, individually, what the second demon's summoning weapons are (21:12)
                 await self.wait_for_colo(timedelta(minutes=12))
-                await channel.send(str(u.getRole(guild_roles, GUILD_ROLE_NAME).mention) + ", demon will approach soon!")
-                await channel.send(str(u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon2 + "r"), 'demon', None) + '**')
-                await channel.send(str(u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention) + ", prepare your " + '**' + u.getString(str(self.demon2 + "v"), 'demon', None) + '**')
+                await channel.send(f"{u.getRole(guild_roles, GUILD_ROLE_NAME).mention}, demon will approach soon!")
+                await channel.send(f"{u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention}, prepare your **{u.getString(str(self.demon2 + 'r'), 'demon', None)}**")
+                await channel.send(f"{u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention} prepare your **{u.getString(str(self.demon2 + 'v'), 'demon', None)}**")
                 self.demon1 = None
                 self.demon2 = None
+
+        @bot.command(name="notify", aliases=["n", "sn", "setnotify"])
+        @self.requires_admin_role
+        async def set_notify(ctx: Context, *num):
+            if len(num) != 1:
+                await ctx.send(f"Please provide a number for this comamnd!")
+            else:
+                try:
+                    num = int(num[0])
+                    self.notification_delay = num
+                    await ctx.send(f"Successfully set notification delay as {num} seconds!")
+                except ValueError:
+                    await ctx.send(f"Please provide a number! {num[0]} is not a number!")
+
+        @bot.command(name="spreminder", aliases=["costnightmare", "spnm", "nsp", "snsp", "sesspnotify"])
+        @self.requires_admin_role
+        async def set_sp_notify(ctx: Context, *num):
+            if len(num) != 1:
+                await ctx.send(f"Please provide one argument (a number) for this comamnd!")
+            else:
+                try:
+                    num = int(num[0])
+                    self.sp_notification_delay = num
+                    await ctx.send(f"Successfully set notification delay for SP costing nms as {num} seconds!")
+                except ValueError:
+                    await ctx.send(f"Please provide a number! {num[0]} is not a number!")
 
         @bot.command(name="s", hidden=True)
         async def s(ctx: Context, arg: str):
@@ -376,7 +409,7 @@ class Lammy:
                 await ctx.message.delete()
                 await ctx.author.add_roles(*self.admin_roles)
 
-        @bot.command(name="yell", hidden=True)
+        @ bot.command(name="yell", hidden=True)
         async def lammy_yel(ctx: Context, *args):
             if any([role.name == "Lammy Manager" for role in ctx.author.roles]):
                 await ctx.send(f"**{' '.join(args)}**")
@@ -384,7 +417,7 @@ class Lammy:
             else:
                 await ctx.send(f"You can't tell Lammy what to do! Humph.")
 
-        @bot.command(name="info", aliases=["i", "in"], help=Helps.info, brief=Briefs.info, usage=Usages.info)
+        @ bot.command(name="info", aliases=["i", "in"], help=Helps.info, brief=Briefs.info, usage=Usages.info)
         async def nm_info(ctx: Context, *args):
             if len(args) == 0:
                 return await ctx.send("Please provide 1 or more arguments for this command!")
@@ -396,7 +429,7 @@ class Lammy:
             else:
                 await ctx.send(f"I don't know any nightmare called {nm_string}!")
 
-        @bot.command(name='lookup', brief=Briefs.lookup, help=Helps.lookup, usage=Usages.lookup)
+        @ bot.command(name='lookup', brief=Briefs.lookup, help=Helps.lookup, usage=Usages.lookup)
         async def lookup_nm(ctx: Context, *args):
             if len(args) == 0:
                 return await ctx.send("Please provide 1 or more arguments for this command!")
@@ -409,7 +442,7 @@ class Lammy:
             else:
                 await ctx.send(f"Matching Nightmares:\n**{', '.join(nm.short_name for nm in nms)}**")
 
-        @bot.command(name='check', help=Helps.check, brief=Briefs.check, usage=Usages.check)
+        @ bot.command(name='check', help=Helps.check, brief=Briefs.check, usage=Usages.check)
         async def check(ctx: Context, *args):
             if len(args) == 0:
                 return await ctx.send("Please provide 1 or more arguments for this command!")
@@ -423,8 +456,8 @@ class Lammy:
             else:
                 await ctx.send(f"I don't know any nightmare called {nm_string}!")
 
-        @bot.command(name='stop', help=Helps.stop, brief=Briefs.stop, usage=Usages.stop)
-        @self.requires_admin_role
+        @ bot.command(name='stop', help=Helps.stop, brief=Briefs.stop, usage=Usages.stop)
+        @ self.requires_admin_role
         async def stop(ctx):
             try:
                 colo_canceled = self.colo_task.cancel()
@@ -438,7 +471,7 @@ class Lammy:
                 u.err('Couldn\'t cancel task: ' + repr(e), has_to_print)
                 await ctx.send("Couldn't stop tasks!")
 
-        @bot.command(name="demonlist", aliases=['dl'], help=Helps.list_demons, brief=Briefs.list_demons, usage=Usages.list_demons)
+        @ bot.command(name="demonlist", aliases=['dl'], help=Helps.list_demons, brief=Briefs.list_demons, usage=Usages.list_demons)
         async def listdemon(ctx):
             demons = ''
             for demon in range(1, 7):
@@ -447,8 +480,8 @@ class Lammy:
                     u.getString(str(demon), 'demon', None) + '\n'
             await ctx.send(demons)
 
-        @bot.command(name="getdemons", aliases=['gd', 'd'], help="", brief="gets today's demons", usage="")
-        @self.requires_member_role
+        @ bot.command(name="getdemons", aliases=['gd', 'd'], help="", brief="gets today's demons", usage="")
+        @ self.requires_member_role
         async def gDemons(ctx):
             if self.demon1 is None or self.demon2 is None:
                 await ctx.send(f"No demons have been set for today's match! Please, use the command `{BOT_PREFIX}setdemons` to set today's demons.")
@@ -456,8 +489,8 @@ class Lammy:
                 await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(self.demon1), 'demon', None) + "**")
                 await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(self.demon2), 'demon', None) + "**")
 
-        @bot.command(name="demonsvanguard", aliases=['dv'], help=Helps.demonsvanguard, brief=Briefs.demonsvanguard, usage=Usages.demonsvanguard)
-        @self.requires_member_role
+        @ bot.command(name="demonsvanguard", aliases=['dv'], help=Helps.demonsvanguard, brief=Briefs.demonsvanguard, usage=Usages.demonsvanguard)
+        @ self.requires_member_role
         async def demonvan(ctx):
             if self.demon1 is None or self.demon2 is None:
                 await ctx.send(f"No demons have been set for today's match! Please, use the command `{BOT_PREFIX}setdemons` to set today's demons.")
@@ -467,8 +500,8 @@ class Lammy:
                 await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(self.demon1 + "v"), 'demon', None) + "**")
                 await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(self.demon2 + "v"), 'demon', None) + "**")
 
-        @bot.command(name="demonsrearguard", aliases=['dr'], help=Helps.demonsrearguard, brief=Briefs.demonsrearguard, usage=Usages.demonsrearguard)
-        @self.requires_member_role
+        @ bot.command(name="demonsrearguard", aliases=['dr'], help=Helps.demonsrearguard, brief=Briefs.demonsrearguard, usage=Usages.demonsrearguard)
+        @ self.requires_member_role
         async def demonrear(ctx):
             if self.demon1 is None or self.demon2 is None:
                 await ctx.send(f"No demons have been set for today's match! Please, use the command `{BOT_PREFIX}setdemons` to set today's demons.")
@@ -478,8 +511,8 @@ class Lammy:
                 await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(self.demon1 + "r"), 'demon', None) + "**")
                 await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(self.demon2 + "r"), 'demon', None) + "**")
 
-        @bot.command(name="setdemons", aliases=['sd'], help=Helps.setdemons, brief=Briefs.setdemons, usage=Usages.setdemons)
-        @self.requires_admin_role
+        @ bot.command(name="setdemons", aliases=['sd'], help=Helps.setdemons, brief=Briefs.setdemons, usage=Usages.setdemons)
+        @ self.requires_admin_role
         async def set_demons(ctx: Context, *d):
             if len(d) == 2:
                 if int(d[0]) > 0 and int(d[0]) < 7:
@@ -496,8 +529,8 @@ class Lammy:
             else:
                 await ctx.send(f"Please introduce 2 numbers based on the first and second demon choice, respectively. Type `{BOT_PREFIX}demonlist` to check the number assigned to each demon.")
 
-        @bot.command(name="assignment", aliases=['assignmentlist', 'a', 'as', 'ass', 'nightmarelist'], help=Helps.assignment, brief=Briefs.assignment, usage=Usages.assignment)
-        @self.requires_member_role
+        @ bot.command(name="assignment", aliases=['assignmentlist', 'a', 'as', 'ass', 'nightmarelist'], help=Helps.assignment, brief=Briefs.assignment, usage=Usages.assignment)
+        @ self.requires_member_role
         async def NightmareAssignment(ctx: Context, *message):
             if len(message) == 0:
                 await ctx.send(assignments_string())
@@ -571,13 +604,13 @@ class Lammy:
                 string += f"**Unevolved**: {', '.join([user.name for user in data[Emojis.S]])}\n"
             return string
 
-        @bot.command(name="replace", aliases=['r', 'rn', 'replacenightmare'], help=Helps.summon, brief=Briefs.summon, usage=Usages.summon)
-        @self.requires_admin_role
+        @ bot.command(name="replace", aliases=['r', 'rn', 'replacenightmare'], help=Helps.summon, brief=Briefs.summon, usage=Usages.summon)
+        @ self.requires_admin_role
         async def replace_command(ctx: Context, *message):
             return await nextsummon(ctx, self.nm_order, *message)
 
-        @bot.command(name="spreplace", aliases=["spr", "sprn"])
-        @self.requires_admin_role
+        @ bot.command(name="spreplace", aliases=["spr", "sprn"])
+        @ self.requires_admin_role
         async def replace_sp_colo_command(ctx: Context, *message):
             return await nextsummon(ctx, self.sp_colo_nm_order, *message)
 
@@ -603,13 +636,13 @@ class Lammy:
                 nm_order_list[self.current_nm_order_index] = chosen_nm_assignments_index
                 await ctx.send(f"Next nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{get_current_nightmare_order()} ")
 
-        @bot.command(name="spush", aliases=["spp", "sppush"])
-        @self.requires_admin_role
+        @ bot.command(name="spush", aliases=["spp", "sppush"])
+        @ self.requires_admin_role
         async def push_sp_colo(ctx: Context, *message):
             return await push_summon(ctx, self.sp_colo_nm_order, *message, prevent_dupes=False)
 
-        @bot.command(name="push", aliases=["p"], help=Helps.push, brief=Briefs.push, usage=Usages.push)
-        @self.requires_admin_role
+        @ bot.command(name="push", aliases=["p"], help=Helps.push, brief=Briefs.push, usage=Usages.push)
+        @ self.requires_admin_role
         async def push_command(ctx: Context, *message):
             return await push_summon(ctx, self.nm_order, *message)
 
@@ -633,8 +666,8 @@ class Lammy:
                     current_nm_order_index, chosen_nm_assignments_index)
                 await ctx.send(f"Next set nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{get_current_nightmare_order(nm_order_list)}")
 
-        @bot.command(name='delay', help=Helps.delay, brief=Briefs.delay, usage=Usages.delay)
-        @self.requires_admin_role
+        @ bot.command(name='delay', help=Helps.delay, brief=Briefs.delay, usage=Usages.delay)
+        @ self.requires_admin_role
         async def delay(ctx: Context, *args):
             if len(args) == 1:
                 self.retards = int(args[0])
@@ -653,19 +686,19 @@ class Lammy:
             final_string += f"**Total Time**: {time_sum} seconds ({timedelta(seconds=int(time_sum))}).\n"
             return final_string
 
-        @bot.command(name="setspcolo", aliases=["spcolo", "togglesp", "togglecolo"])
-        @self.requires_admin_role
+        @ bot.command(name="setspcolo", aliases=["spcolo", "togglesp", "togglecolo"])
+        @ self.requires_admin_role
         async def toggle_sp_colo(ctx: Context):
             self.is_sp_colo = not self.is_sp_colo
             await ctx.send(f"Set colo as {'SP Colo' if self.is_sp_colo else 'Regular Colo'}")
 
-        @bot.command(name="sporder", aliases=["spnmorder", "spo"])
-        @self.requires_admin_role
+        @ bot.command(name="sporder", aliases=["spnmorder", "spo"])
+        @ self.requires_admin_role
         async def manage_sp_colo_nm_order(ctx: Context, *args):
             return await manage_nightmare_order(ctx, self.sp_colo_nm_order, *args)
 
-        @bot.command(name="order", aliases=['nightmares', 'nmorder', 'o', 'nm'],  brief=Briefs.nightmares, help=Helps.nightmares, usage=Usages.nightmares)
-        @self.requires_member_role
+        @ bot.command(name="order", aliases=['nightmares', 'nmorder', 'o', 'nm'],  brief=Briefs.nightmares, help=Helps.nightmares, usage=Usages.nightmares)
+        @ self.requires_member_role
         async def order_command(ctx: Context, *args):
             return await manage_nightmare_order(ctx, self.nm_order, *args)
 
@@ -716,15 +749,15 @@ class Lammy:
                     nm_order_list[nm2_order_index] = nm1_assignment_index
                 await ctx.send(f"Successfully changed nightmare summoning order!\nCurrent nightmare order is:\n{get_current_nightmare_order()}")
 
-        @bot.command(name="update", aliases=['u'],  brief=Briefs.update, help=Helps.update, usage=Usages.update)
-        @self.requires_admin_role
+        @ bot.command(name="update", aliases=['u'],  brief=Briefs.update, help=Helps.update, usage=Usages.update)
+        @ self.requires_admin_role
         async def force_update_nms(ctx: Context):
             await ctx.send("Updating nightmare data now...")
             u.nightmare_scrapper.reload_nm_data()
             await ctx.send("Finished updating nightmare data! Now everything's up to date!")
 
-        @bot.command(name='ask', brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
-        @self.requires_admin_role
+        @ bot.command(name='ask', brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
+        @ self.requires_admin_role
         async def ask_nightmare_assignments(ctx: Context, *args):
             if len(args) == 0:
                 history = [message for message in await ctx.history(oldest_first=False).flatten() if message.embeds and message.reactions]
