@@ -1,6 +1,5 @@
 import asyncio
 import re
-import sys
 import traceback
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
@@ -16,7 +15,7 @@ import Utils as u
 from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
                     GUILD_ROLE_NAME, REARGUARD_ROLE_NAME, VANGUARD_ROLE_NAME,
                     AssignmentData, Briefs, Emojis, Helps, Usages,
-                    has_to_print, initial_order)
+                    has_to_print)
 from config.dataclasses import NightmareData, User
 from CustomHelpCommand import CustomHelpCommand
 
@@ -35,7 +34,8 @@ class Lammy:
         self.demon2 = None
         self.channel_data = (None, None)  # Tuple of (channel_id, guild_id)
         self.start_bot_waiting = None
-        self.nm_order = initial_order
+        self.nm_order = list()
+        self.sp_colo_nm_order = list()
         # Variable for use during colosseum to indicate index of current nightmare
         self.current_nm_order_index = 0
         self.admin_roles = set()
@@ -570,7 +570,15 @@ class Lammy:
 
         @bot.command(name="replace", aliases=['r', 'rn', 'replacenightmare'], help=Helps.summon, brief=Briefs.summon, usage=Usages.summon)
         @self.requires_admin_role
-        async def nextsummon(ctx, *message):
+        async def replace_command(ctx: Context, *message):
+            return await nextsummon(ctx, self.nm_order, *message)
+
+        @bot.command(name="spreplace", aliases=["spr", "sprn"])
+        @self.requires_admin_role
+        async def replace_sp_colo_command(ctx: Context, *message):
+            return await nextsummon(ctx, self.sp_colo_nm_order, *message)
+
+        async def nextsummon(ctx, nm_order_list, *message):
             if len(message) == 0:
                 await ctx.send("Please type the next nightmare you want summoned. If you want to check a list with said nightmares, type `{}assignmentlist`".foramt(BOT_PREFIX))
             else:
@@ -582,19 +590,27 @@ class Lammy:
                         return await ctx.send(u.getString("nightmare", "error", ' '.join(message)))
                     return await ctx.send(u.getString("assignment", "error", ' '.join(message)))
                 chosen_nm_assignments_index = self.assignments.index(chosen_nm)
-                current_nm_assignments_index = self.current_nm_order[self.current_nm_order_index]
+                current_nm_assignments_index = nm_order_list[self.current_nm_order_index]
                 try:
-                    chosen_nm_order_index = self.current_nm_order.index(
+                    chosen_nm_order_index = nm_order_list.index(
                         chosen_nm_assignments_index)
-                    self.current_nm_order[chosen_nm_order_index] = current_nm_assignments_index
+                    nm_order_list[chosen_nm_order_index] = current_nm_assignments_index
                 except ValueError:
                     pass
-                self.current_nm_order[self.current_nm_order_index] = chosen_nm_assignments_index
+                nm_order_list[self.current_nm_order_index] = chosen_nm_assignments_index
                 await ctx.send(f"Next nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{get_current_nightmare_order()} ")
+
+        @bot.command(name="spush", aliases=["spp", "sppush"])
+        @self.requires_admin_role
+        async def push_sp_colo(ctx: Context, *message):
+            return await push_summon(ctx, self.sp_colo_nm_order, *message, prevent_dupes=False)
 
         @bot.command(name="push", aliases=["p"], help=Helps.push, brief=Briefs.push, usage=Usages.push)
         @self.requires_admin_role
-        async def push_summon(ctx: Context, *message):
+        async def push_command(ctx: Context, *message):
+            return await push_summon(ctx, self.nm_order, *message)
+
+        async def push_summon(ctx: Context, nm_order_list, *message, prevent_dupes=True):
             if len(message) == 0:
                 await ctx.send(f"Please type the next nightmare you want summoned. If you want to check a list with said nightmares, type `{BOT_PREFIX}assignmentlist`")
             else:
@@ -605,14 +621,14 @@ class Lammy:
                         return await ctx.send(u.getString("nightmare", "error", ' '.join(message)))
                     return await ctx.send(u.getString("assignment", "error", ' '.join(message)))
                 # if chosen nightmare is already in order list, switches summon instead of pushing it
-                elif self.assignments.index(chosen_nm) in self.current_nm_order:
-                    return await nextsummon(ctx, *message)
+                elif prevent_dupes and self.assignments.index(chosen_nm) in self.current_nm_order:
+                    return await nextsummon(ctx, nm_order_list, *message)
                 # Push chosen nightmare before current nightmare in order list
                 chosen_nm_assignments_index = self.assignments.index(chosen_nm)
                 current_nm_order_index = self.current_nm_order_index
-                self.current_nm_order.insert(
+                nm_order_list.insert(
                     current_nm_order_index, chosen_nm_assignments_index)
-                await ctx.send(f"Next set nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{get_current_nightmare_order()}")
+                await ctx.send(f"Next set nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{get_current_nightmare_order(nm_order_list)}")
 
         @bot.command(name='delay', help=Helps.delay, brief=Briefs.delay, usage=Usages.delay)
         @self.requires_admin_role
@@ -623,10 +639,10 @@ class Lammy:
             else:
                 await ctx.send("Please write a number")
 
-        def get_current_nightmare_order():
+        def get_current_nightmare_order(nm_order_list=self.nm_order):
             final_string = ''
             time_sum = 0
-            for order_index, nm_index in enumerate(self.current_nm_order):
+            for order_index, nm_index in enumerate(nm_order_list):
                 assignment = self.assignments[nm_index]
                 final_string += f"`{order_index}`\t**{assignment.nm.name}** (assigned to {assignment.user.name}). "\
                     f"Preparation time is {assignment.nm.colo_skill.lead_time} seconds, active duration is {assignment.nm.colo_skill.duration} seconds and requires {assignment.nm.colo_skill.sp} SP.\n"
@@ -634,17 +650,25 @@ class Lammy:
             final_string += f"**Total Time**: {time_sum} seconds ({timedelta(seconds=int(time_sum))}).\n"
             return final_string
 
+        @bot.command(name="sporder", aliases=["spnmorder", "spo"])
+        @self.requires_admin_role
+        async def manage_sp_colo_nm_order(ctx: Context, *args):
+            return await manage_nightmare_order(ctx, self.sp_colo_nm_order, *args)
+
         @bot.command(name="order", aliases=['nightmares', 'nmorder', 'o', 'nm'],  brief=Briefs.nightmares, help=Helps.nightmares, usage=Usages.nightmares)
         @self.requires_member_role
-        async def manage_nightmare_order(ctx: Context, *args):
+        async def order_command(ctx: Context, *args):
+            return await manage_nightmare_order(ctx, self.nm_order, *args)
+
+        async def manage_nightmare_order(ctx: Context, nm_order_list, *args):
             if len(args) == 0:
-                await ctx.send(f"Current nightmare order is:\n{get_current_nightmare_order()}You can change the order using the command `{BOT_PREFIX}order {{nm1}} {{nm2}}`.")
+                await ctx.send(f"Current nightmare order is:\n{get_current_nightmare_order(nm_order_list)}You can change the order using the command `{BOT_PREFIX}order {{nm1}} {{nm2}}`.")
             elif len(args) == 1:
                 assignment = u.get_nm_assignment_from_message(" ".join(args), self.assignments)
                 nm_string = " ".join(args[1:])
                 if assignment is None:
-                    return ctx.send(f"I don't have any assignment data for {nm_string}!\nCheck the assignment list with `{BOT_PREFIX}assignment`")
-                return await push_summon(ctx, *args)
+                    return await ctx.send(f"I don't have any assignment data for {nm_string}!\nCheck the assignment list with `{BOT_PREFIX}assignment`")
+                return await push_summon(ctx, nm_order_list, *args)
             elif not u.user_is_permitted(ctx.author, self.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             elif args[0].lower() in ("remove", '-r'):
@@ -654,13 +678,13 @@ class Lammy:
                     return ctx.send(f"I don't have any assignment data for {nm_string}!\nCheck the assignment list with `{BOT_PREFIX}assignment`")
                 assignment_index = self.assignments.index(assignment)
                 try:
-                    self.current_nm_order.remove(assignment_index)
+                    nm_order_list.remove(assignment_index)
                     await ctx.send(f"Successfully removed {assignment.nm.name} from the summoning order list!")
                 except ValueError:
                     await ctx.send(f"{assignment.nm.name} isn't in the summoning order list!\nCheck the order list with `{BOT_PREFIX}order`")
             else:
                 nm1, nm2 = starmap(u.get_nm_assignment_from_message, zip(
-                    args, (self.assignments,) * 2, (True,) * 2, (self.current_nm_order, ) * 2))
+                    args, (self.assignments,) * 2, (True,) * 2, (nm_order_list, ) * 2))
                 try:
                     nm1_assignment_index, nm2_assignment_index = map(
                         self.assignments.index, (nm1, nm2))
@@ -668,19 +692,19 @@ class Lammy:
                     return await ctx.send("Please make sure both nightmares have assignments for them!")
                 nm1_order_index, nm2_order_index = None, None
                 try:
-                    nm1_order_index = self.current_nm_order.index(
+                    nm1_order_index = nm_order_list.index(
                         nm1_assignment_index)
                 except ValueError:
                     pass
                 try:
-                    nm2_order_index = self.current_nm_order.index(
+                    nm2_order_index = nm_order_list.index(
                         nm2_assignment_index)
                 except ValueError:
                     pass
                 if nm1_order_index is not None:
-                    self.current_nm_order[nm1_order_index] = nm2_assignment_index
+                    nm_order_list[nm1_order_index] = nm2_assignment_index
                 if nm2_order_index is not None:
-                    self.current_nm_order[nm2_order_index] = nm1_assignment_index
+                    nm_order_list[nm2_order_index] = nm1_assignment_index
                 await ctx.send(f"Successfully changed nightmare summoning order!\nCurrent nightmare order is:\n{get_current_nightmare_order()}")
 
         @bot.command(name="update", aliases=['u'],  brief=Briefs.update, help=Helps.update, usage=Usages.update)

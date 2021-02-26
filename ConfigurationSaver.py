@@ -58,6 +58,10 @@ class ConfigurationSaver:
                 self._running_bot.colo_time = conf["colo_time"]
                 self._running_bot.demon1 = conf["demons"][0]
                 self._running_bot.demon2 = conf["demons"][1]
+                if "sporder" in conf:
+                    self._running_bot.sp_colo_nm_order = conf["sporder"]
+                if "order" in conf:
+                    self._running_bot.nm_order = conf["order"]
                 if conf["is_started"]:
                     asyncio.ensure_future(self._running_bot.start_bot_waiting(None))
 
@@ -80,5 +84,7 @@ class ConfigurationSaver:
             colo_time=bot.colo_time,
             demons=(bot.demon1, bot.demon2),
             channel_data=bot.channel_data,
-            is_started=bot.colo_task is not None and bot.demon_task is not None
+            is_started=bot.colo_task is not None and bot.demon_task is not None,
+            order=bot.nm_order,
+            sporder=bot.sp_colo_nm_order
         )

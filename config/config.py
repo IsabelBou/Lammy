@@ -20,11 +20,6 @@ VANGUARD_ROLE_NAME = "Vanguard"
 REARGUARD_ROLE_NAME = "Rearguard"
 
 
-# nightmare order: Order based on the positions of nightmares in assignments matrix
-# 0: mensaje perder ganar 1: asdjhakd
-initial_order = list()
-
-
 class Emojis(Enum):
     L = "🇱"
     S = "🇸"
