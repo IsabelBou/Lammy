@@ -553,8 +553,8 @@ class Lammy:
                 return "No assignments data :("
             final_string = ''
             for assignment in self.assignments:
-                final_string += f"**{assignment.nm.short_name}** ({assignment.user.name}): "\
-                    f"Ready in {assignment.nm.colo_skill.lead_time},lasts {assignment.nm.colo_skill.duration}, {assignment.nm.colo_skill.sp} SP cost.\n"
+                final_string += f"**{assignment.nm.name}** ({assignment.user.name}). "\
+                    f"Ready in **{assignment.nm.lead_time}**s, lasts **{assignment.nm.duration}**s. **{assignment.nm.sp}** SP cost.\n"
             return final_string
 
         def equipped_nms_string(nm: NightmareData):
