@@ -48,6 +48,7 @@ class Lammy:
         self.afks = set()
 
         self.colo_time = time(20, 00, 0, 0, tzinfo=timezone.utc)
+        self.is_sp_colo = False
 
         u.fullClear()
         u.log(u.getString('separator', 'printable', None), False)
@@ -87,6 +88,8 @@ class Lammy:
 
     @property
     def current_nm_order(self):
+        if self.is_sp_colo:
+            return self.sp_colo_nm_order
         return self.nm_order
 
     @property
@@ -621,7 +624,7 @@ class Lammy:
                         return await ctx.send(u.getString("nightmare", "error", ' '.join(message)))
                     return await ctx.send(u.getString("assignment", "error", ' '.join(message)))
                 # if chosen nightmare is already in order list, switches summon instead of pushing it
-                elif prevent_dupes and self.assignments.index(chosen_nm) in self.current_nm_order:
+                elif prevent_dupes and self.assignments.index(chosen_nm) in nm_order_list:
                     return await nextsummon(ctx, nm_order_list, *message)
                 # Push chosen nightmare before current nightmare in order list
                 chosen_nm_assignments_index = self.assignments.index(chosen_nm)
@@ -649,6 +652,12 @@ class Lammy:
                 time_sum += assignment.nm.colo_skill.lead_time + assignment.nm.colo_skill.duration
             final_string += f"**Total Time**: {time_sum} seconds ({timedelta(seconds=int(time_sum))}).\n"
             return final_string
+
+        @bot.command(name="setspcolo", aliases=["spcolo", "togglesp", "togglecolo"])
+        @self.requires_admin_role
+        async def toggle_sp_colo(ctx: Context):
+            self.is_sp_colo = not self.is_sp_colo
+            await ctx.send(f"Set colo as {'SP Colo' if self.is_sp_colo else 'Regular Colo'}")
 
         @bot.command(name="sporder", aliases=["spnmorder", "spo"])
         @self.requires_admin_role
