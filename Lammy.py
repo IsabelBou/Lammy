@@ -396,7 +396,7 @@ class Lammy:
         @self.requires_admin_role
         async def set_sp_notify(ctx: Context, *num):
             if len(num) == 0:
-                await ctx.send(f"Notification delay for SP colo is set as {self.sp_notification_delay} seconds!")
+                await ctx.send(f"Notification delay for SP costing nms is set as {self.sp_notification_delay} seconds!")
             elif len(num) != 1:
                 await ctx.send(f"Please provide one argument (a number) for this comamnd!")
             else:
