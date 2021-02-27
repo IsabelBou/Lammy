@@ -682,11 +682,13 @@ class Lammy:
         def get_current_nightmare_order(nm_order_list=self.nm_order):
             final_string = ''
             time_sum = 0
+            is_sp_list = nm_order_list is self.sp_colo_nm_order
             for order_index, nm_index in enumerate(nm_order_list):
                 assignment = self.assignments[nm_index]
+                skill_lead_time = 5 if is_sp_list else assignment.nm.colo_skill.lead_time
                 final_string += f"`{order_index}`\t**{assignment.nm.name}** (assigned to {assignment.user.name}). "\
-                    f"Preparation time is {assignment.nm.colo_skill.lead_time} seconds, active duration is {assignment.nm.colo_skill.duration} seconds and requires {assignment.nm.colo_skill.sp} SP.\n"
-                time_sum += assignment.nm.colo_skill.lead_time + assignment.nm.colo_skill.duration
+                    f"Preparation time is {skill_lead_time} seconds, active duration is {assignment.nm.colo_skill.duration} seconds and requires {assignment.nm.colo_skill.sp} SP.\n"
+                time_sum += skill_lead_time + assignment.nm.colo_skill.duration
             final_string += f"**Total Time**: {time_sum} seconds ({timedelta(seconds=int(time_sum))}).\n"
             return final_string
 
@@ -751,7 +753,7 @@ class Lammy:
                     nm_order_list[nm1_order_index] = nm2_assignment_index
                 if nm2_order_index is not None:
                     nm_order_list[nm2_order_index] = nm1_assignment_index
-                await ctx.send(f"Successfully changed nightmare summoning order!\nCurrent nightmare order is:\n{get_current_nightmare_order()}")
+                await ctx.send(f"Successfully changed nightmare summoning order!\nCurrent nightmare order is:\n{get_current_nightmare_order(nm_order_list)}")
 
         @bot.command(name="update", aliases=['u'],  brief=Briefs.update, help=Helps.update, usage=Usages.update)
         @self.requires_admin_role
