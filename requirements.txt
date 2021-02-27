@@ -1,3 +1,4 @@
 discord
 pandas
 flask
+tabulate

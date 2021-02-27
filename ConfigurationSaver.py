@@ -85,6 +85,6 @@ class ConfigurationSaver:
             demons=(bot.demon1, bot.demon2),
             channel_data=bot.channel_data,
             is_started=bot.colo_task is not None and bot.demon_task is not None,
-            order=bot.nm_order,
-            sporder=bot.sp_colo_nm_order
+            order=bot._nm_order,
+            sporder=bot._sp_colo_nm_order
         )

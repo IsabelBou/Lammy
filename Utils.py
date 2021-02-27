@@ -2,11 +2,13 @@ import datetime as date
 import os
 import xml.etree.ElementTree as ET
 from time import sleep
+from typing import Union
 
 from discord.member import Member
 from numpy.testing._private.utils import measure
 
 from config import NightmareData, User
+from config.dataclasses import AssignmentData
 from NightmareScrapper import nightmare_scrapper
 
 
@@ -57,7 +59,7 @@ def lookup_nms(message):
     return [NightmareData.from_series(item) for item in df.iloc]
 
 
-def get_nm_assignment_from_message(message, assignments, index_from_order_arr=False, current_order_list=None):
+def get_nm_assignment_from_message(message, assignments, index_from_order_arr=False, current_order_list=None) -> Union[AssignmentData, None]:
     """
     :param message: A string/int which represents the name of a nightmare/member in the assignments list
     :param index_from_order_arr: If given message is an int representing an index, specify if that index is of order list or assignments list
@@ -66,7 +68,8 @@ def get_nm_assignment_from_message(message, assignments, index_from_order_arr=Fa
     try:
         message = int(message)
         if index_from_order_arr:
-            return assignments[current_order_list[message]]
+            filtered = [assignment for assignment in assignments if assignment.nm == current_order_list[message]]
+            return filtered[0] if len(filtered) else None
         return assignments[message]
     except ValueError:
         message = str(message).lower()

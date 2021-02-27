@@ -10,6 +10,7 @@ from discord import Game, Guild
 from discord import Member as DiscordMember
 from discord import Message, Role
 from discord.ext.commands import Bot, CommandNotFound, Context
+from tabulate import tabulate
 
 import Utils as u
 from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
@@ -34,8 +35,8 @@ class Lammy:
         self.demon2 = None
         self.channel_data = (None, None)  # Tuple of (channel_id, guild_id)
         self.start_bot_waiting = None
-        self.nm_order = list()
-        self.sp_colo_nm_order = list()
+        self._nm_order: List[NightmareData] = list()
+        self._sp_colo_nm_order: List[NightmareData] = list()
         # Variable for use during colosseum to indicate index of current nightmare
         self.current_nm_order_index = 0
         self.admin_roles = set()
@@ -82,15 +83,37 @@ class Lammy:
         await asyncio.sleep(interval.total_seconds())
 
     @property
+    def nm_order(self):
+        return [[index for index, assignment in enumerate(self.assignments) if assignment.nm == nm][0] for nm in self._nm_order]
+
+    @property
+    def sp_colo_nm_order(self):
+        return [[index for index, assignment in enumerate(self.assignments) if assignment.nm == nm][0] for nm in self._sp_colo_nm_order]
+
+    @sp_colo_nm_order.setter
+    def sp_colo_nm_order(self, value: List[int]):
+        if all(isinstance(val, int) for val in value):
+            self._sp_colo_nm_order = [self.assignments[index].nm for index in value]
+        else:
+            self._sp_colo_nm_order = value
+
+    @nm_order.setter
+    def nm_order(self, value: List[int]):
+        if all(isinstance(val, int) for val in value):
+            self._nm_order = [self.assignments[index].nm for index in value]
+        else:
+            self._nm_order = value
+
+    @property
     def guild(self):
         return self.bot.get_guild(self.channel_data[1])
 
     @property
     def current_assignment(self):
-        return self.assignments[self.current_nm_order[self.current_nm_order_index]]
+        return self.assignments[self.current_nm_order_indexes[self.current_nm_order_index]]
 
     @property
-    def current_nm_order(self):
+    def current_nm_order_indexes(self):
         if self.is_sp_colo:
             return self.sp_colo_nm_order
         return self.nm_order
@@ -137,11 +160,11 @@ class Lammy:
             await bot.process_commands(message)
 
         @bot.event
-        async def on_command_error(ctx, error):
+        async def on_command_error(ctx, error: Exception):
             if isinstance(error, CommandNotFound):
                 await ctx.send("I don't know that command!")
             else:
-                traceback.print_exc()
+                print("".join(traceback.format_exception(type(error), error, error.__traceback__)))
                 await ctx.send(f"Something's wrong! tell Lammy's administrators that I got this: {error}")
 
         async def message_from_payload(payload) -> Message:
@@ -320,9 +343,9 @@ class Lammy:
                 else:
                     await channel.send(f"**{current_nm.user.mention}**, summon {current_nm.nm.name}")
                 # coge índice de pesadilla de la matriz de order -- EN: grab nightmare index from order array
-                for i in range(1, len(self.current_nm_order)):
+                for i in range(1, len(self.current_nm_order_indexes)):
                     self.current_nm_order_index = i
-                    previous_nm = self.assignments[self.current_nm_order[i-1]]
+                    previous_nm = self.assignments[self.current_nm_order_indexes[i-1]]
 
                     nm_skill_time = int(previous_nm.nm.colo_skill.duration + previous_nm.nm.colo_skill.lead_time)
                     notification_delay = self.sp_notification_delay if self.current_assignment.nm.colo_skill.sp else self.notification_delay
@@ -452,11 +475,14 @@ class Lammy:
                 return await ctx.send("Please provide 1 or more arguments for this command!")
             nm_string = " ".join(args)
             nm = u.get_nm_data_from_message(nm_string)
+            user = u.get_user_from_username(nm_string, ctx, False)
             if nm is not None:
                 embed = nm.embed
                 if nm in self.equipped_nms and any(self.equipped_nms[nm].values()):
                     embed.add_field(name="Members Equipped", value=equipped_nms_string(nm), inline=False)
                 await ctx.send(embed=embed)
+            elif user is not None:
+                await ctx.send(f"User {user.name} does")
             else:
                 await ctx.send(f"I don't know any nightmare called {nm_string}!")
 
@@ -545,6 +571,8 @@ class Lammy:
                 assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
                 if not assignment:
                     return await ctx.send(f"I don't have any assignment for {nm_string}!\nPlease check the assignments using `{BOT_PREFIX}assignment`")
+                if assignment.nm in self._nm_order or assignment.nm in self._sp_colo_nm_order:
+                    return await ctx.send(f"{assignment.nm.name} is in an order list for colo! Please remove this nm from the order list before removing its assignment")
                 try:
                     self.assignments.remove(assignment)
                     await ctx.send(f"Successfully removed {assignment.nm.name} from the assignment list!")
@@ -591,11 +619,17 @@ class Lammy:
         def assignments_string():
             if len(self.assignments) == 0:
                 return "No assignments data :("
-            final_string = ''
+            as_table = list()
+            titles = ["Nm Name", "Username", "Lead time", "Skill duration", "SP cost"]
             for assignment in self.assignments:
-                final_string += f"**{assignment.nm.short_name}** ({assignment.user.name}). "\
-                    f"Ready in **{assignment.nm.colo_skill.lead_time}**s, lasts **{assignment.nm.colo_skill.duration}**s. **{assignment.nm.colo_skill.sp}** SP cost.\n"
-            return final_string
+                as_table.append([
+                    assignment.nm.short_name,
+                    assignment.user.name,
+                    f"{assignment.nm.colo_skill.lead_time}s",
+                    f"{assignment.nm.colo_skill.duration}s",
+                    assignment.nm.colo_skill.sp
+                ])
+            return f'`{tabulate(as_table, titles, tablefmt="plain")}`'
 
         def equipped_nms_string(nm: NightmareData):
             string = str()
@@ -611,14 +645,14 @@ class Lammy:
         @bot.command(name="replace", aliases=['r', 'rn', 'replacenightmare'], help=Helps.summon, brief=Briefs.summon, usage=Usages.summon)
         @self.requires_admin_role
         async def replace_command(ctx: Context, *message):
-            return await nextsummon(ctx, self.nm_order, *message)
+            return await nextsummon(ctx, self._nm_order, *message)
 
         @bot.command(name="spreplace", aliases=["spr", "sprn"])
         @self.requires_admin_role
         async def replace_sp_colo_command(ctx: Context, *message):
-            return await nextsummon(ctx, self.sp_colo_nm_order, *message)
+            return await nextsummon(ctx, self._sp_colo_nm_order, *message)
 
-        async def nextsummon(ctx, nm_order_list, *message):
+        async def nextsummon(ctx, nm_order_list: list, *message):
             if len(message) == 0:
                 await ctx.send("Please type the next nightmare you want summoned. If you want to check a list with said nightmares, type `{}assignmentlist`".foramt(BOT_PREFIX))
             else:
@@ -629,46 +663,43 @@ class Lammy:
                     if chosen_nm is None:
                         return await ctx.send(u.getString("nightmare", "error", ' '.join(message)))
                     return await ctx.send(u.getString("assignment", "error", ' '.join(message)))
-                chosen_nm_assignments_index = self.assignments.index(chosen_nm)
-                current_nm_assignments_index = nm_order_list[self.current_nm_order_index]
                 try:
-                    chosen_nm_order_index = nm_order_list.index(
-                        chosen_nm_assignments_index)
-                    nm_order_list[chosen_nm_order_index] = current_nm_assignments_index
+                    chosen_nm_order_index = nm_order_list.index(chosen_nm)
+                    current_nm = nm_order_list[self.current_nm_order_index]
+                    nm_order_list[chosen_nm_order_index] = current_nm
                 except ValueError:
                     pass
-                nm_order_list[self.current_nm_order_index] = chosen_nm_assignments_index
-                await ctx.send(f"Next nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{get_current_nightmare_order()} ")
+                nm_order_list[self.current_nm_order_index] = chosen_nm.nm
+                await ctx.send(f"Next nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{nm_order_string()} ")
 
         @bot.command(name="spush", aliases=["spp", "sppush"])
         @self.requires_admin_role
         async def push_sp_colo(ctx: Context, *message):
-            return await push_summon(ctx, self.sp_colo_nm_order, *message, prevent_dupes=False)
+            return await push_summon(ctx, self._sp_colo_nm_order, *message, prevent_dupes=False)
 
         @bot.command(name="push", aliases=["p"], help=Helps.push, brief=Briefs.push, usage=Usages.push)
         @self.requires_admin_role
         async def push_command(ctx: Context, *message):
-            return await push_summon(ctx, self.nm_order, *message)
+            return await push_summon(ctx, self._nm_order, *message)
 
-        async def push_summon(ctx: Context, nm_order_list, *message, prevent_dupes=True):
+        async def push_summon(ctx: Context, nm_order_list: list, *message, prevent_dupes=True):
             if len(message) == 0:
                 await ctx.send(f"Please type the next nightmare you want summoned. If you want to check a list with said nightmares, type `{BOT_PREFIX}assignmentlist`")
             else:
-                chosen_nm = u.get_nm_assignment_from_message(" ".join(message), self.assignments)
-                if chosen_nm is None:
-                    chosen_nm = u.get_nm_data_from_message(" ".join(message))
-                    if chosen_nm is None:
+                chosen_assignment = u.get_nm_assignment_from_message(" ".join(message), self.assignments)
+                if chosen_assignment is None:
+                    chosen_assignment = u.get_nm_data_from_message(" ".join(message))
+                    if chosen_assignment is None:
                         return await ctx.send(u.getString("nightmare", "error", ' '.join(message)))
                     return await ctx.send(u.getString("assignment", "error", ' '.join(message)))
                 # if chosen nightmare is already in order list, switches summon instead of pushing it
-                elif prevent_dupes and self.assignments.index(chosen_nm) in nm_order_list:
+                elif prevent_dupes and chosen_assignment in nm_order_list:
                     return await nextsummon(ctx, nm_order_list, *message)
                 # Push chosen nightmare before current nightmare in order list
-                chosen_nm_assignments_index = self.assignments.index(chosen_nm)
                 current_nm_order_index = self.current_nm_order_index
                 nm_order_list.insert(
-                    current_nm_order_index, chosen_nm_assignments_index)
-                await ctx.send(f"Next set nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{get_current_nightmare_order(nm_order_list)}")
+                    current_nm_order_index, chosen_assignment.nm)
+                await ctx.send(f"Next set nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{nm_order_string(nm_order_list)}")
 
         @bot.command(name='delay', help=Helps.delay, brief=Briefs.delay, usage=Usages.delay)
         @self.requires_admin_role
@@ -679,18 +710,23 @@ class Lammy:
             else:
                 await ctx.send("Please write a number")
 
-        def get_current_nightmare_order(nm_order_list=self.nm_order):
-            final_string = ''
+        def nm_order_string(nm_order_list=self._nm_order):
             time_sum = 0
-            is_sp_list = nm_order_list is self.sp_colo_nm_order
-            for order_index, nm_index in enumerate(nm_order_list):
-                assignment = self.assignments[nm_index]
+            is_sp_list = nm_order_list is self._sp_colo_nm_order
+            as_table = list()
+            titles = ["Nm Name", "Username", "Lead time", "Skill duration", "SP cost"]
+            for nm in nm_order_list:
+                assignment = [assignment for assignment in self.assignments if assignment.nm == nm][0]
                 skill_lead_time = 5 if is_sp_list else assignment.nm.colo_skill.lead_time
-                final_string += f"`{order_index}`\t**{assignment.nm.name}** (assigned to {assignment.user.name}). "\
-                    f"Preparation time is {skill_lead_time} seconds, active duration is {assignment.nm.colo_skill.duration} seconds and requires {assignment.nm.colo_skill.sp} SP.\n"
+                as_table.append([
+                    assignment.nm.short_name,
+                    assignment.user.name,
+                    skill_lead_time,
+                    assignment.nm.colo_skill.duration,
+                    assignment.nm.colo_skill.sp
+                ])
                 time_sum += skill_lead_time + assignment.nm.colo_skill.duration
-            final_string += f"**Total Time**: {time_sum} seconds ({timedelta(seconds=int(time_sum))}).\n"
-            return final_string
+            return f'`{tabulate(as_table, titles, tablefmt="plain", showindex=True)}`\n**Total Time**: {time_sum} seconds ({timedelta(seconds=int(time_sum))}).\n'
 
         @bot.command(name="setspcolo", aliases=["spcolo", "togglesp", "togglecolo"])
         @self.requires_admin_role
@@ -701,19 +737,22 @@ class Lammy:
         @bot.command(name="sporder", aliases=["spnmorder", "spo"])
         @self.requires_admin_role
         async def manage_sp_colo_nm_order(ctx: Context, *args):
-            return await manage_nightmare_order(ctx, self.sp_colo_nm_order, *args)
+            return await manage_nightmare_order(ctx, self._sp_colo_nm_order, *args)
 
         @bot.command(name="order", aliases=['nightmares', 'nmorder', 'o', 'nm'],  brief=Briefs.nightmares, help=Helps.nightmares, usage=Usages.nightmares)
         @self.requires_member_role
         async def order_command(ctx: Context, *args):
-            return await manage_nightmare_order(ctx, self.nm_order, *args)
+            return await manage_nightmare_order(ctx, self._nm_order, *args)
 
-        async def manage_nightmare_order(ctx: Context, nm_order_list, *args):
+        async def manage_nightmare_order(ctx: Context, nm_order_list: list, *args):
             if len(args) == 0:
-                await ctx.send(f"Current nightmare order is:\n{get_current_nightmare_order(nm_order_list)}You can change the order using the command `{BOT_PREFIX}order {{nm1}} {{nm2}}`.")
+                await ctx.send(f"Current nightmare order is:\n{nm_order_string(nm_order_list)}You can change the order using the command `{BOT_PREFIX}order {{nm1}} {{nm2}}`.")
             elif len(args) == 1:
-                assignment = u.get_nm_assignment_from_message(" ".join(args), self.assignments)
-                nm_string = " ".join(args[1:])
+                nm_string = " ".join(args)
+                if nm_string.lower() == "clear":
+                    nm_order_list.clear()
+                    return await ctx.send(f"Successfully cleared order data!")
+                assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
                 if assignment is None:
                     return await ctx.send(f"I don't have any assignment data for {nm_string}!\nCheck the assignment list with `{BOT_PREFIX}assignment`")
                 return await push_summon(ctx, nm_order_list, *args)
@@ -723,37 +762,31 @@ class Lammy:
                 nm_string = " ".join(args[1:])
                 assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
                 if assignment is None:
-                    return ctx.send(f"I don't have any assignment data for {nm_string}!\nCheck the assignment list with `{BOT_PREFIX}assignment`")
-                assignment_index = self.assignments.index(assignment)
+                    return await ctx.send(f"I don't have any assignment data for {nm_string}!\nCheck the assignment list with `{BOT_PREFIX}assignment`")
                 try:
-                    nm_order_list.remove(assignment_index)
+                    nm_order_list.remove(assignment.nm)
                     await ctx.send(f"Successfully removed {assignment.nm.name} from the summoning order list!")
                 except ValueError:
                     await ctx.send(f"{assignment.nm.name} isn't in the summoning order list!\nCheck the order list with `{BOT_PREFIX}order`")
             else:
-                nm1, nm2 = starmap(u.get_nm_assignment_from_message, zip(
+                assignment1, assignment2 = starmap(u.get_nm_assignment_from_message, zip(
                     args, (self.assignments,) * 2, (True,) * 2, (nm_order_list, ) * 2))
-                try:
-                    nm1_assignment_index, nm2_assignment_index = map(
-                        self.assignments.index, (nm1, nm2))
-                except ValueError:
+                if assignment1 is None or assignment2 is None:
                     return await ctx.send("Please make sure both nightmares have assignments for them!")
                 nm1_order_index, nm2_order_index = None, None
                 try:
-                    nm1_order_index = nm_order_list.index(
-                        nm1_assignment_index)
+                    nm1_order_index = nm_order_list.index(assignment1.nm)
                 except ValueError:
                     pass
                 try:
-                    nm2_order_index = nm_order_list.index(
-                        nm2_assignment_index)
+                    nm2_order_index = nm_order_list.index(assignment2.nm)
                 except ValueError:
                     pass
                 if nm1_order_index is not None:
-                    nm_order_list[nm1_order_index] = nm2_assignment_index
+                    nm_order_list[nm1_order_index] = assignment1.nm
                 if nm2_order_index is not None:
-                    nm_order_list[nm2_order_index] = nm1_assignment_index
-                await ctx.send(f"Successfully changed nightmare summoning order!\nCurrent nightmare order is:\n{get_current_nightmare_order(nm_order_list)}")
+                    nm_order_list[nm2_order_index] = assignment2.nm
+                await ctx.send(f"Successfully changed nightmare summoning order!\nCurrent nightmare order is:\n{nm_order_string(nm_order_list)}")
 
         @bot.command(name="update", aliases=['u'],  brief=Briefs.update, help=Helps.update, usage=Usages.update)
         @self.requires_admin_role
