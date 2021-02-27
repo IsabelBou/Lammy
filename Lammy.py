@@ -380,7 +380,9 @@ class Lammy:
         @bot.command(name="notify", aliases=["n", "sn", "setnotify"])
         @self.requires_admin_role
         async def set_notify(ctx: Context, *num):
-            if len(num) != 1:
+            if len(num) == 0:
+                await ctx.send(f"Notification delay is set as {self.notification_delay} seconds!")
+            elif len(num) != 1:
                 await ctx.send(f"Please provide a number for this comamnd!")
             else:
                 try:
@@ -393,7 +395,9 @@ class Lammy:
         @bot.command(name="spreminder", aliases=["costnightmare", "spnm", "nsp", "snsp", "sesspnotify"])
         @self.requires_admin_role
         async def set_sp_notify(ctx: Context, *num):
-            if len(num) != 1:
+            if len(num) == 0:
+                await ctx.send(f"Notification delay for SP colo is set as {self.sp_notification_delay} seconds!")
+            elif len(num) != 1:
                 await ctx.send(f"Please provide one argument (a number) for this comamnd!")
             else:
                 try:
