@@ -131,7 +131,7 @@ EMBED_MAPPING = dict(
         fields=[
             dict(
                 name="{0}order".format(BOT_PREFIX),
-                value="Displays the current nightmare summoning order, showing their place in the rotation, the nightmare's name, preparation time and lead time"
+                value="Displays the current nightmare summoning order, showing their place in the rotation, the nightmare's name, preparation time and active time"
             ),
             dict(
                 name="{0}order `<Nightmare1>` `<Nightmare2>` `[...]`".format(BOT_PREFIX),
@@ -242,6 +242,38 @@ EMBED_MAPPING = dict(
             dict(
                 name="{0}lookup `<description>`".format(BOT_PREFIX),
                 value="Looks for nightmares whose description matches with the string inputted."
+            )
+        ]
+    ),    
+    SetSPColo=dict(
+        title="**Set SP Colosseum**",
+        description="Command names: `{0}SetSPcolo`, `{0}SPcolo`, `{0}ToggleSP`, `{0}ToggleColo`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+       		dict(
+                name="{0}SetSPcolo".format(BOT_PREFIX),
+                value="Sets Colosseum mode to SP, which automatically replaces preparation time with 5 seconds in the order annd assignments. Uses `{0}SPorder` list instead of regular `{}order` list"
+            )
+        ]
+    ),
+    SPorder=dict(
+        title="**SP Colosseum Order**",
+        description="Command names: `{0}SPorder`, `{0}SPnmorder`, `{0}spo`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+	    dict(
+                name="{0}SPorder".format(BOT_PREFIX),
+                value="Displays the nightmare summoning order *for SP colosseum*, showing their place in the rotation, the nightmare's name, preparation time and active time"
+            ),
+            dict(
+                name="{0}SPorder `<Nightmare1>` `<Nightmare2>` `[...]`".format(BOT_PREFIX),
+                value="""*Admin-exclusive command.* Adds the inputted nightmares to the SP colosseum order, if they weren't already part of it
+                        *Note: the inputted nightmares must have an assigned summoner first, which can be set with the command ´{0}assignment <nightmare> <user>´. Otherwise, Lammy wouldn't know who to ping when their summoning time comes!*
+						*Note 2: If used during colosseum with two nightmares as parameters, it will swap their positions in the rotation.*""".format(BOT_PREFIX)
+            ),
+            dict(
+                name="{0}order -r `<Nightmare/user>`".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Removes the inputted nightmare or user from the SP colosseum order list, if they were part of it."
             )
         ]
     ),
