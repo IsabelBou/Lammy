@@ -21,7 +21,11 @@ EMBED_MAPPING = dict(
             ),
             dict(
                 name="{0}Assignment -r `<Nightmare/user>`".format(BOT_PREFIX),
-                value="*Admin-exclusive command.* Removes the inputted nightmare or user from the assignment list, if they were part of it."
+                value="*Admin-exclusive command.* Removes the inputted nightmare or user from the assignment list, if they were part of it."            
+	    ),
+            dict(
+                name="{0}Assignment clear".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Clears the assignment list."
 	    )
         ]
     ),
@@ -142,6 +146,10 @@ EMBED_MAPPING = dict(
             dict(
                 name="{0}order -r `<Nightmare/user>`".format(BOT_PREFIX),
                 value="*Admin-exclusive command.* Removes the inputted nightmare or user from the order list, if they were part of it."
+	    ),
+            dict(
+                name="{0}order clear".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Empties the order list."
             )
         ]
     ),
@@ -252,7 +260,7 @@ EMBED_MAPPING = dict(
         fields=[
        		dict(
                 name="{0}SetSPcolo".format(BOT_PREFIX),
-                value="Sets Colosseum mode to SP, which automatically replaces preparation time with 5 seconds in the order annd assignments. Uses `{0}SPorder` list instead of regular `{}order` list"
+                value="Toggles Colosseum mode between regular colosseum and SP colosseum, which automatically replaces preparation time with 5 seconds in the order and assignments. Uses `{0}SPorder` list instead of regular `{}order` list"
             )
         ]
     ),
@@ -272,8 +280,12 @@ EMBED_MAPPING = dict(
 						*Note 2: If used during colosseum with two nightmares as parameters, it will swap their positions in the rotation.*""".format(BOT_PREFIX)
             ),
             dict(
-                name="{0}order -r `<Nightmare/user>`".format(BOT_PREFIX),
+                name="{0}SPorder -r `<Nightmare/user>`".format(BOT_PREFIX),
                 value="*Admin-exclusive command.* Removes the inputted nightmare or user from the SP colosseum order list, if they were part of it."
+            ),
+            dict(
+                name="{0}SPorder clear".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Empties the SP Colosseum's order list."
             )
         ]
     ),
