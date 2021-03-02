@@ -245,7 +245,7 @@ EMBED_MAPPING = dict(
             )
         ]
     ),    
-    SetSPColo=dict(
+    setspcolo=dict(
         title="**Set SP Colosseum**",
         description="Command names: `{0}SetSPcolo`, `{0}SPcolo`, `{0}ToggleSP`, `{0}ToggleColo`".format(BOT_PREFIX),
         color=0x75ebdb,
@@ -256,7 +256,7 @@ EMBED_MAPPING = dict(
             )
         ]
     ),
-    SPorder=dict(
+    sporder=dict(
         title="**SP Colosseum Order**",
         description="Command names: `{0}SPorder`, `{0}SPnmorder`, `{0}spo`".format(BOT_PREFIX),
         color=0x75ebdb,
