@@ -297,6 +297,11 @@ EMBED_MAPPING = dict(
                 name="{0}check `<nightmare>`".format(BOT_PREFIX),
                 value="Checks the members' reacts to the message generated with `{0}ask` to return who has it, its evolution level, and who is equipping it in their colosseum grid, in case it needs to be summoned and the assigned summoner is afk for colosseum.".format(
                     BOT_PREFIX)
+            ),
+	    dict(
+                name="{0}check `<user>`".format(BOT_PREFIX),
+                value="Checks the user's reacts to the message generated with `{0}ask` to return which nightmares the inputted user has, their evolution status and up to 5 equipped ones".format(
+                    BOT_PREFIX)
             )
         ]
     )
