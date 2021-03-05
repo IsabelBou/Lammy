@@ -52,18 +52,16 @@ class ConfigurationSaver:
                 guild = self._running_bot.bot.get_guild(self._running_bot.channel_data[1])
                 if guild:
                     self._running_bot.admin_roles = set(ConfigurationSaver.role_from_id(guild, role)
-                                                        for role in conf["admin_roles"]) - set((None,))
+                                                        for role in conf["admin_roles"]) - {None}
                     self._running_bot.member_roles = set(ConfigurationSaver.role_from_id(guild, role)
-                                                         for role in conf["member_roles"]) - set((None,))
+                                                         for role in conf["member_roles"]) - {None}
 
                 self._running_bot.afks = conf["afks"]
                 self._running_bot.colo_time = conf["colo_time"]
                 self._running_bot.demon1 = conf["demons"][0]
                 self._running_bot.demon2 = conf["demons"][1]
-                if "sporder" in conf:
-                    self._running_bot.sp_colo_nm_order = conf["sporder"]
-                if "order" in conf:
-                    self._running_bot.nm_order = conf["order"]
+                self._running_bot.sp_colo_nm_order = conf["sporder"]
+                self._running_bot.nm_order = conf["order"]
                 if conf["is_started"]:
                     asyncio.ensure_future(self._running_bot.start_bot_waiting(None))
 
