@@ -93,10 +93,7 @@ class Lammy:
 
     @sp_colo_nm_order.setter
     def sp_colo_nm_order(self, value: List[int]):
-        if all(isinstance(val, int) for val in value):
-            self._sp_colo_nm_order = [self.assignments[index].nm for index in value]
-        else:
-            self._sp_colo_nm_order = value
+        self._sp_colo_nm_order = value
 
     @nm_order.setter
     def nm_order(self, value: List[int]):
