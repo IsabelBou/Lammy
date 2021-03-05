@@ -21,7 +21,11 @@ EMBED_MAPPING = dict(
             ),
             dict(
                 name="{0}Assignment -r `<Nightmare/user>`".format(BOT_PREFIX),
-                value="*Admin-exclusive command.* Removes the inputted nightmare or user from the assignment list, if they were part of it."
+                value="*Admin-exclusive command.* Removes the inputted nightmare or user from the assignment list, if they were part of it."            
+	    ),
+            dict(
+                name="{0}Assignment clear".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Clears the assignment list."
 	    )
         ]
     ),
@@ -131,7 +135,7 @@ EMBED_MAPPING = dict(
         fields=[
             dict(
                 name="{0}order".format(BOT_PREFIX),
-                value="Displays the current nightmare summoning order, showing their place in the rotation, the nightmare's name, preparation time and lead time"
+                value="Displays the current nightmare summoning order, showing their place in the rotation, the nightmare's name, preparation time and active time"
             ),
             dict(
                 name="{0}order `<Nightmare1>` `<Nightmare2>` `[...]`".format(BOT_PREFIX),
@@ -142,6 +146,10 @@ EMBED_MAPPING = dict(
             dict(
                 name="{0}order -r `<Nightmare/user>`".format(BOT_PREFIX),
                 value="*Admin-exclusive command.* Removes the inputted nightmare or user from the order list, if they were part of it."
+	    ),
+            dict(
+                name="{0}order clear".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Empties the order list."
             )
         ]
     ),
@@ -244,6 +252,42 @@ EMBED_MAPPING = dict(
                 value="Looks for nightmares whose description matches with the string inputted."
             )
         ]
+    ),    
+    setspcolo=dict(
+        title="**Set SP Colosseum**",
+        description="Command names: `{0}SetSPcolo`, `{0}SPcolo`, `{0}ToggleSP`, `{0}ToggleColo`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+       		dict(
+                name="{0}SetSPcolo".format(BOT_PREFIX),
+                value="Toggles Colosseum mode between regular colosseum and SP colosseum, which automatically replaces preparation time with 5 seconds in the order and assignments. Uses `{0}SPorder` list instead of regular `{}order` list"
+            )
+        ]
+    ),
+    sporder=dict(
+        title="**SP Colosseum Order**",
+        description="Command names: `{0}SPorder`, `{0}SPnmorder`, `{0}spo`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+	    dict(
+                name="{0}SPorder".format(BOT_PREFIX),
+                value="Displays the nightmare summoning order *for SP colosseum*, showing their place in the rotation, the nightmare's name, preparation time and active time"
+            ),
+            dict(
+                name="{0}SPorder `<Nightmare1>` `<Nightmare2>` `[...]`".format(BOT_PREFIX),
+                value="""*Admin-exclusive command.* Adds the inputted nightmares to the SP colosseum order, if they weren't already part of it
+                        *Note: the inputted nightmares must have an assigned summoner first, which can be set with the command ´{0}assignment <nightmare> <user>´. Otherwise, Lammy wouldn't know who to ping when their summoning time comes!*
+						*Note 2: If used during colosseum with two nightmares as parameters, it will swap their positions in the rotation.*""".format(BOT_PREFIX)
+            ),
+            dict(
+                name="{0}SPorder -r `<Nightmare/user>`".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Removes the inputted nightmare or user from the SP colosseum order list, if they were part of it."
+            ),
+            dict(
+                name="{0}SPorder clear".format(BOT_PREFIX),
+                value="*Admin-exclusive command.* Empties the SP Colosseum's order list."
+            )
+        ]
     ),
     update=dict(
         title="**Update**",
@@ -264,6 +308,11 @@ EMBED_MAPPING = dict(
             dict(
                 name="{0}check `<nightmare>`".format(BOT_PREFIX),
                 value="Checks the members' reacts to the message generated with `{0}ask` to return who has it, its evolution level, and who is equipping it in their colosseum grid, in case it needs to be summoned and the assigned summoner is afk for colosseum.".format(
+                    BOT_PREFIX)
+            ),
+	    dict(
+                name="{0}check `<user>`".format(BOT_PREFIX),
+                value="Checks the user's reacts to the message generated with `{0}ask` to return which nightmares the inputted user has, their evolution status and up to 5 equipped ones".format(
                     BOT_PREFIX)
             )
         ]
