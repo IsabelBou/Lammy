@@ -25,3 +25,8 @@ class Emojis(Enum):
     S = "🇸"
     V = "☑️"
 
+EMOJIS_TO_WORD_MAPPING = {
+    Emojis.L: "Evolved",
+    Emojis.S: "Unevolved",
+    Emojis.V: "Equiped"
+}

@@ -17,6 +17,7 @@ from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
                     GUILD_ROLE_NAME, REARGUARD_ROLE_NAME, VANGUARD_ROLE_NAME,
                     AssignmentData, Briefs, Emojis, Helps, Usages,
                     has_to_print)
+from config.config import EMOJIS_TO_WORD_MAPPING
 from config.dataclasses import NightmareData, User
 from CustomHelpCommand import CustomHelpCommand
 
@@ -145,6 +146,18 @@ class Lammy:
             return __inner
 
         return decorator
+
+    def nms_of_user(self, user: User) -> Dict[Emojis, List[NightmareData]]:
+        mapping: Dict[Emojis, List[NightmareData]] = dict()
+        for nm, data in self.equipped_nms.items():
+            for emoji, users in data.items():
+                if user not in users:
+                    continue
+                if emoji in mapping:
+                    mapping[emoji].append(nm)
+                else:
+                    mapping[emoji] = [nm]
+        return mapping
 
     def run(self):
         bot = self.bot
@@ -482,7 +495,12 @@ class Lammy:
                     embed.add_field(name="Members Equipped", value=equipped_nms_string(nm), inline=False)
                 await ctx.send(embed=embed)
             elif user is not None:
-                await ctx.send(f"User {user.name} does")
+                nms_of_user = self.nms_of_user(user)
+                nms_string = nms_of_user_string(nms_of_user)
+                if nms_string == str():
+                    await ctx.send(f"User {user.name} didn't mark any nightmares in the ask command!")
+                else:
+                    await ctx.send(f"User {user.name} has \n{nms_of_user_string(nms_of_user)}")
             else:
                 await ctx.send(f"I don't know any nightmare called {nm_string}!")
 
@@ -632,15 +650,18 @@ class Lammy:
             return f'`{tabulate(as_table, titles, tablefmt="plain")}`'
 
         def equipped_nms_string(nm: NightmareData):
-            string = str()
             data = self.equipped_nms.get(nm)
-            if Emojis.V in data:
-                string += f"**Equipped**: {', '.join([user.name for user in data[Emojis.V]])}\n"
-            if Emojis.L in data:
-                string += f"**Evolved**: {', '.join([user.name for user in data[Emojis.L]])}\n"
-            if Emojis.S in data:
-                string += f"**Unevolved**: {', '.join([user.name for user in data[Emojis.S]])}\n"
-            return string
+            return "\n".join(
+                f"**{EMOJIS_TO_WORD_MAPPING[emoji]}**: {', '.join(user.name for user in data[emoji])}"
+                for emoji in Emojis
+                if emoji in data
+            )
+
+        def nms_of_user_string(nms_of_user: Dict[Emojis, List[NightmareData]]):
+            return "\n".join(
+                f"**{EMOJIS_TO_WORD_MAPPING[emoji]}**: {', '.join(nm.short_name for nm in nms_of_user[emoji])}"
+                for emoji in Emojis if emoji in nms_of_user
+            )
 
         @bot.command(name="replace", aliases=['r', 'rn', 'replacenightmare'], help=Helps.summon, brief=Briefs.summon, usage=Usages.summon)
         @self.requires_admin_role
