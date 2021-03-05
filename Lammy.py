@@ -198,7 +198,7 @@ class Lammy:
                 except ValueError:
                     continue
                 users = [user async for user in reaction.users() if user.mention != lammy_mention and isinstance(user, DiscordMember)]
-                self.equipped_nms[nm][emoji] = [User(user.display_name, user.mention) for user in users]
+                self.equipped_nms[nm][emoji] = [User(user.name, user.mention) for user in users]
                 if emoji is Emojis.V:
                     users_who_have_equipped.update(users)
             await update_users_roles_by_nm(nm, users_who_have_equipped, message.guild)
