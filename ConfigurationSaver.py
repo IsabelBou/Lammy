@@ -1,7 +1,7 @@
 import asyncio
+import traceback
 from contextlib import suppress
 from pickle import dump, load
-from traceback import print_exc
 
 from config.dataclasses import User
 from Lammy import Lammy
@@ -23,13 +23,15 @@ class ConfigurationSaver:
                 except TypeError as e:
                     print(repr(e))
                     print(self._conf_data)
+                except Exception as e:
+                    print(traceback.format_exception(type(e), e, e.__traceback__))
 
     async def _start(self):
         try:
             await self._load_conf_data()
             await self._run()
         except Exception as e:
-            print_exc()
+            print(traceback.format_exception(type(e), e, e.__traceback__))
 
     def start(self):
         loop = asyncio.get_event_loop()
