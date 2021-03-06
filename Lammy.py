@@ -454,6 +454,18 @@ class Lammy:
             else:
                 await ctx.send(f"You can't tell Lammy what to do! Humph.")
 
+        @bot.command(name="infos", aliases=["infostory", "storyinfo", "is", "ins"])
+        async def story_info(ctx: Context, *args):
+            if len(args) == 0:
+                return await ctx.send("Please provide 1 or more arguments for this command!")
+            nm_string = " ".join(args)
+            nm = u.get_nm_data_from_message(nm_string)
+            if nm is not None:
+                embed = nm.story_embed
+                await ctx.send(embed=embed)
+            else:
+                await ctx.send(f"I don't know any nightmare called {nm_string}!")
+
         @bot.command(name="info", aliases=["i", "in"], help=Helps.info, brief=Briefs.info, usage=Usages.info)
         async def nm_info(ctx: Context, *args):
             if len(args) == 0:

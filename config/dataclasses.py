@@ -55,6 +55,14 @@ class NightmareData:
                         value=f"Duration: {self.colo_skill.duration} seconds.\nLead time: {self.colo_skill.lead_time} seconds.")
         embed.set_image(url=f"https://sinoalice.game-db.tw/images/card/CardS{str(self.resource_name).rjust(4, '0')}.png")
         return embed
+    @property
+    def story_embed(self):
+        embed = Embed(title=f"{self.name} (Story version!)", color=int(self.color))
+        embed.add_field(name=self.story_skill.name, value=self.story_skill.description.replace(r"\n", "\n"))
+        embed.add_field(name=f"Costs {self.story_skill.sp}SP",
+                        value=f"Duration: {self.story_skill.duration} seconds.\nLead time: {self.story_skill.lead_time} seconds.")
+        embed.set_image(url=f"https://sinoalice.game-db.tw/images/card/CardS{str(self.resource_name).rjust(4, '0')}.png")
+        return embed
 
 
 @dataclass
