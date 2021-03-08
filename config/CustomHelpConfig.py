@@ -90,12 +90,23 @@ EMBED_MAPPING = dict(
         ]
     ),
     info=dict(
-        title="**Nightmare information**",
+        title="**Nightmare information (Colosseum)**",
         description="Command names: `{0}info`, `{0}in`, `{0}i`".format(BOT_PREFIX),
         color=0x75ebdb,
         fields=[
             dict(name="{0}info `<nightmare>`".format(BOT_PREFIX),
-                 value="""Will display the inputted nightmare's relevant information. Doesn't require the full nightmare name a reduced, unique string of characters for said nightmare is enough.
+                 value="""Will display the inputted nightmare's relevant information in colosseum. Doesn't require the full nightmare name a reduced, unique string of characters for said nightmare is enough.
+                	*Note: Lammy is a smol clam, so if your reduced string is not unique to one nightmare and is, in fact, part of more than one nightmare's full name, Lammy will be confused and won't retrieve the information!*"""
+                 )
+        ]
+    ),    
+    infostory=dict(
+        title="**Nightmare information (Story)**",
+        description="Command names: `{0}infostory`, `{0}infos`, `{0}is`, `{0}ins`, `{0}storyinfo`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+            dict(name="{0}info `<nightmare>`".format(BOT_PREFIX),
+                 value="""Will display the inputted nightmare's relevant information in story mode. Doesn't require the full nightmare name a reduced, unique string of characters for said nightmare is enough.
                 	*Note: Lammy is a smol clam, so if your reduced string is not unique to one nightmare and is, in fact, part of more than one nightmare's full name, Lammy will be confused and won't retrieve the information!*"""
                  )
         ]
