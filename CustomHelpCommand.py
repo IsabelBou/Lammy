@@ -12,9 +12,9 @@ class CustomHelpCommand(DefaultHelpCommand):
         embed = Embed(title="**Lammy's Instructions**",
                       description=f"Use `{BOT_PREFIX}help [command]` for more info on a command.\nThe ones in italics are usable by *`admins only`*", color=0x75ebdb)
         embed.add_field(name="Initial Setup", value="*`setadmin`*, *`setmembers`*, *`time`*", inline=False)
-        embed.add_field(name="Colosseum demon settings",
-                        value="`demonlist`, *`setdemons`*, `getdemons`, `demonsrearguard`, `demonsvanguard`", inline=False)
-        embed.add_field(name="Nightmare Assignments", value="`assignment`, `nightmares`, `info`, `update`, `check`, `lookup`, *`ask`*", inline=False)
+        embed.add_field(name="Colosseum demon settings", value="`demonlist`, *`setdemons`*, `getdemons`, `demonsrearguard`, `demonsvanguard`", inline=False)
+        embed.add_field(name="Nightmare Information", value="`info`, `infostory`,`update`, `check`, `lookup`", inline=False)       
+        embed.add_field(name="Assignments & Order", value="`assignment`, `order`, `update`, *`ask`*", inline=False)        
         embed.add_field(name="Colosseum actions", value="*`afk`*, *`start`*, *`delay`*, *`push`*, *`replace`*, *`stop`*", inline=False)
         embed.add_field(name="SP Colosseum", value="*`setSPcolo`*, *`SPOrder`*", inline=False)
         await destination.send(embed=embed)
