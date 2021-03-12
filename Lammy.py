@@ -749,7 +749,11 @@ class Lammy:
             as_table = list()
             titles = ["Nm Name", "Username", "Lead time", "Skill duration", "SP cost"]
             for nm in nm_order_list:
-                assignment = [assignment for assignment in self.assignments if assignment.nm == nm][0]
+                filtered = [assignment for assignment in self.assignments if assignment.nm == nm]
+                if not len(filtered):
+                    assignment = AssignmentData(nm=nm, user=User("No one!", mention="No one!"))
+                else:
+                    assignment = filtered[0]
                 skill_lead_time = 5 if is_sp_list else assignment.nm.colo_skill.lead_time
                 as_table.append([
                     assignment.nm.short_name,
