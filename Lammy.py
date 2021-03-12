@@ -593,6 +593,9 @@ class Lammy:
                 await ctx.send(assignments_string())
             elif not u.user_is_permitted(ctx.author, self.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
+            elif message[0].lower() == 'clear':
+                self.assignments.clear()
+                await ctx.send(f"Successfully cleared assignment data!")
             elif message[0].lower() in ("remove", "-r"):
                 nm_string = " ".join(message[1:])
                 assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
