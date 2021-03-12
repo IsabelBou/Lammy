@@ -34,7 +34,7 @@ class Lammy:
         self.retards = 0  # Summon delay of players summoning nightmares
         self.demon1 = None
         self.demon2 = None
-        self.channel_data = (None, None)  # Tuple of (channel_id, guild_id)
+        self.colo_channel_data = (None, None)  # Tuple of (channel_id, guild_id)
         self.start_bot_waiting = None
         self._nm_order: List[NightmareData] = list()
         self._sp_colo_nm_order: List[NightmareData] = list()
@@ -104,7 +104,7 @@ class Lammy:
 
     @property
     def guild(self):
-        return self.bot.get_guild(self.channel_data[1])
+        return self.bot.get_guild(self.colo_channel_data[1])
 
     @property
     def current_assignment(self):
@@ -165,8 +165,8 @@ class Lammy:
 
         @bot.event
         async def on_message(message):
-            if not self.channel_data[1]:
-                self.channel_data = None, message.guild.id
+            if not self.colo_channel_data[1]:
+                self.colo_channel_data = None, message.guild.id
             await bot.process_commands(message)
 
         @bot.event
@@ -282,10 +282,10 @@ class Lammy:
             except:
                 pass
             if ctx is not None:
-                self.channel_data = (ctx.channel.id, ctx.guild.id)
+                self.colo_channel_data = (ctx.channel.id, ctx.guild.id)
             while not len(bot.guilds):
                 await asyncio.sleep(1)
-            channel = self.guild.get_channel(self.channel_data[0])
+            channel = self.guild.get_channel(self.colo_channel_data[0])
             self.colo_task = bot.loop.create_task(colosseum())
             self.demon_task = bot.loop.create_task(demon())
             await channel.send("Waiting for colosseum to start!")
@@ -343,7 +343,7 @@ class Lammy:
                               'info', None), has_to_print)
             guild = self.guild
             roles = list(guild.roles)
-            channel = guild.get_channel(self.channel_data[0])
+            channel = guild.get_channel(self.colo_channel_data[0])
             while not bot.is_closed():
                 await self.wait_for_colo()
                 current_nm = self.current_assignment
@@ -386,7 +386,7 @@ class Lammy:
         async def demon():
             guild = self.guild
             guild_roles = list(guild.roles)
-            channel = guild.get_channel(self.channel_data[0])
+            channel = guild.get_channel(self.colo_channel_data[0])
             while not bot.is_closed():
                 #       Notifies guild that colo is starting in 3 minutes (20:57)
                 await self.wait_for_colo(timedelta(minutes=-3))

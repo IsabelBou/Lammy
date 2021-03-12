@@ -47,9 +47,9 @@ class ConfigurationSaver:
                 await self._running_bot.bot.wait_until_ready()
                 self._running_bot.assignments = conf["assignments"]
                 self._running_bot.equipped_nms = conf["equipped_nms"]
-                self._running_bot.channel_data = conf["channel_data"]
+                self._running_bot.colo_channel_data = conf["channel_data"]
 
-                guild = self._running_bot.bot.get_guild(self._running_bot.channel_data[1])
+                guild = self._running_bot.bot.get_guild(self._running_bot.colo_channel_data[1])
                 if guild:
                     self._running_bot.admin_roles = set(ConfigurationSaver.role_from_id(guild, role)
                                                         for role in conf["admin_roles"]) - {None}
@@ -83,7 +83,7 @@ class ConfigurationSaver:
             afks=bot.afks,
             colo_time=bot.colo_time,
             demons=(bot.demon1, bot.demon2),
-            channel_data=bot.channel_data,
+            channel_data=bot.colo_channel_data,
             is_started=bot.colo_task is not None and bot.demon_task is not None,
             order=bot._nm_order,
             sporder=bot._sp_colo_nm_order
