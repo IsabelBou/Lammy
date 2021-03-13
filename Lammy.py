@@ -926,7 +926,7 @@ class Lammy:
                 now = datetime.now(tz=timezone.utc)
 
                 def users_string(emoji):
-                    return ', '.join(user for user in self.conquest_user_data.get(next_conquest.time().replace(tzinfo=timezone.utc), dict()).get(emoji, list()))
+                    return ', '.join(user.mention for user in self.conquest_user_data.get(next_conquest.time().replace(tzinfo=timezone.utc), dict()).get(emoji, list()))
                 diff = next_conquest - now
                 if diff > timedelta(minutes=10):
                     await asyncio.sleep(abs((diff + timedelta(minutes=-10)).total_seconds()))
