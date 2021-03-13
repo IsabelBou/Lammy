@@ -856,9 +856,9 @@ class Lammy:
                 except ValueError:
                     pass
                 if nm1_order_index is not None:
-                    nm_order_list[nm1_order_index] = assignment1.nm
+                    nm_order_list[nm1_order_index] = assignment2.nm
                 if nm2_order_index is not None:
-                    nm_order_list[nm2_order_index] = assignment2.nm
+                    nm_order_list[nm2_order_index] = assignment1.nm
                 await ctx.send(f"Successfully changed nightmare summoning order!\nCurrent nightmare order is:\n{nm_order_string(nm_order_list)}")
 
         @bot.command(name="update", aliases=['u'],  brief=Briefs.update, help=Helps.update, usage=Usages.update)
@@ -948,7 +948,7 @@ class Lammy:
         @self.requires_admin_role
         async def ask_nightmare_assignments(ctx: Context, *args):
             if len(args) == 0:
-                history = [message async for message in await ctx.history(oldest_first=False) if message.embeds and message.reactions]
+                history = [message async for message in ctx.history(oldest_first=False) if message.embeds and message.reactions]
                 history.sort(key=lambda message: (message.embeds[0].title, message.created_at))
                 filtered = list()
                 for _, group in groupby(history, key=lambda message: message.embeds[0].title):
