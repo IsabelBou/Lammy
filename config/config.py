@@ -26,8 +26,17 @@ class Emojis(Enum):
     S = "🇸"
     V = "☑️"
     ZERO = "0️⃣"
-    TEN = "🔟"
+    ONE = "1️⃣"
+    TWO = "2️⃣"
     THREE = "3️⃣"
+    FOUR = "4️⃣"
+    FIVE = "5️⃣"
+    SIX = "6️⃣"
+    SEVEN = "7️⃣"
+    EIGHT = "8️⃣"
+    NINE = "9️⃣"
+    TEN = "🔟"
+    UNKNOWN = "unknown"
 
 
 EMOJIS_TO_WORD_MAPPING = {
@@ -38,6 +47,20 @@ EMOJIS_TO_WORD_MAPPING = {
 
 CONQUEST_TIMESLOTS: Tuple[time] = time(8, 30, tzinfo=timezone.utc), time(11, 30, tzinfo=timezone.utc), time(15, 30, tzinfo=timezone.utc), time(
     17, 30, tzinfo=timezone.utc), time(19, 30, tzinfo=timezone.utc), time(21, 30, tzinfo=timezone.utc), time(23, 30, tzinfo=timezone.utc), time(1, 30, tzinfo=timezone.utc), time(3, 30, tzinfo=timezone.utc)
+
+EMOJI_TO_TS_MAPPING = {
+    Emojis.ONE: CONQUEST_TIMESLOTS[0],
+    Emojis.TWO: CONQUEST_TIMESLOTS[1],
+    Emojis.THREE: CONQUEST_TIMESLOTS[2],
+    Emojis.FOUR: CONQUEST_TIMESLOTS[3],
+    Emojis.FIVE: CONQUEST_TIMESLOTS[4],
+    Emojis.SIX: CONQUEST_TIMESLOTS[5],
+    Emojis.SEVEN: CONQUEST_TIMESLOTS[6],
+    Emojis.EIGHT: CONQUEST_TIMESLOTS[7],
+    Emojis.NINE: CONQUEST_TIMESLOTS[8]
+}
+
+TS_TO_EMOJI_MAPPING = {value: key for key, value in EMOJI_TO_TS_MAPPING.items()}
 
 
 def get_next_conquest(delta: timedelta = timedelta()) -> datetime:

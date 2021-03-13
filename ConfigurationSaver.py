@@ -3,6 +3,7 @@ import traceback
 from contextlib import suppress
 from pickle import dump, load
 
+from config.config import Emojis
 from config.dataclasses import User
 from Lammy import Lammy
 
@@ -62,13 +63,13 @@ class ConfigurationSaver:
                 self._running_bot.demon2 = conf["demons"][1]
                 self._running_bot.sp_colo_nm_order = conf["sporder"]
                 self._running_bot.nm_order = conf["order"]
-                if "conquest_channel_data" in conf:
-                    self._running_bot.conquest_channel_data = conf["conquest_channel_data"]
-                if "conquest_user_data" in conf:
+                self._running_bot.conquest_channel_data = conf["conquest_channel_data"]
+                
+                if isinstance(list(conf["conquest_user_data"].values())[0], list):
                     self._running_bot.conquest_user_data = conf["conquest_user_data"]
                 if conf["is_started"]:
                     asyncio.ensure_future(self._running_bot.start_bot_waiting(None))
-                if "is_started_conquest" in conf and conf["is_started_conquest"]:
+                if conf["is_started_conquest"]:
                     asyncio.ensure_future(self._running_bot.start_bot_conquest_pings(None))
 
     @staticmethod

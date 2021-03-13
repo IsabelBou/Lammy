@@ -17,7 +17,8 @@ from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
                     GUILD_ROLE_NAME, REARGUARD_ROLE_NAME, VANGUARD_ROLE_NAME,
                     AssignmentData, Briefs, Emojis, Helps, Usages,
                     has_to_print)
-from config.config import (CONQUEST_TIMESLOTS, EMOJIS_TO_WORD_MAPPING,
+from config.config import (CONQUEST_TIMESLOTS, EMOJI_TO_TS_MAPPING,
+                           EMOJIS_TO_WORD_MAPPING, TS_TO_EMOJI_MAPPING,
                            get_next_conquest)
 from config.dataclasses import NightmareData, User
 from CustomHelpCommand import CustomHelpCommand
@@ -39,7 +40,7 @@ class Lammy:
 
         self.start_bot_conquest_pings = None
         self.conquest_channel_data = (None, None)  # Tuple of (channel_id, guild_id)
-        self.conquest_user_data: Dict[time, Dict[Emojis, List[User]]] = {ts: dict() for ts in CONQUEST_TIMESLOTS}
+        self.conquest_user_data: Dict[time, List[User]] = {ts: list() for ts in CONQUEST_TIMESLOTS}
 
         self.colo_channel_data = (None, None)  # Tuple of (channel_id, guild_id)
 
@@ -237,20 +238,16 @@ class Lammy:
             return False
 
         async def update_conquest_ts_users(message: Message):
-            timeslot_match = re.match("React to this message to be pinged in ts([0-9])", message.content, re.IGNORECASE)
-            if timeslot_match:
-                timeslot_index = int(timeslot_match.group(1)) - 1
-                timeslot = CONQUEST_TIMESLOTS[timeslot_index]
-                if not timeslot in self.conquest_user_data:
-                    self.conquest_user_data[timeslot] = dict()
+            is_ts_message = message.content.startswith("Choose your conquest timeslot!")
+            if is_ts_message:
                 for reaction in message.reactions:
                     try:
                         emoji = Emojis(str(reaction.emoji))
                     except ValueError:
                         continue
+                    timeslot = EMOJI_TO_TS_MAPPING[emoji]
                     users = [user async for user in reaction.users() if user.mention != bot.user.mention and isinstance(user, DiscordMember)]
-
-                    self.conquest_user_data[timeslot][emoji] = [User(user.name, user.mention) for user in users]
+                    self.conquest_user_data[timeslot] = [User(user.name, user.mention) for user in users]
 
         async def handle_reaction_on_message(payload):
             message = await message_from_payload(payload)
@@ -871,21 +868,27 @@ class Lammy:
             u.nightmare_scrapper.reload_nm_data()
             await ctx.send("Finished updating nightmare data! Now everything's up to date!")
 
-        @bot.command(name="askConquest", aliases=["ac", "conquest", "askc"])
+        @bot.command(name="askConquest", aliases=["ac", "conquest", "askc", "ca", "conquestask"])
         @self.requires_admin_role
         async def ask_conquest(ctx: Context):
-            already_sent_messages = False
+            already_sent_message = False
             async for message in ctx.history():
                 if message.author.mention == bot.user.mention and message.reactions and message.content.startswith(
-                        "React to this message to be pinged in ts"):
+                        "Choose your conquest timeslot!"):
                     await update_conquest_ts_users(message)
-                    already_sent_messages = True
-            if not already_sent_messages:
-                for index, ts in enumerate(CONQUEST_TIMESLOTS):
-                    message = await ctx.send(f"React to this message to be pinged in ts{index+1} ({ts.hour}:{ts.minute}, GMT)")
-                    await message.add_reaction(Emojis.TEN.value)
-                    await message.add_reaction(Emojis.THREE.value)
-                    await message.add_reaction(Emojis.ZERO.value)
+                    already_sent_message = True
+            if not already_sent_message:
+                timeslots_table = list()
+                titles = "Timeslot", "EU gang", "Jewish idiot", "US gang"
+                for ts in CONQUEST_TIMESLOTS:
+                    timeslots_table.append((
+                        TS_TO_EMOJI_MAPPING[ts].value,
+                        (datetime.combine(date.min, ts) + timedelta(hours=1)).time(),
+                        (datetime.combine(date.min, ts) + timedelta(hours=2)).time(),
+                        (datetime.combine(date.max, ts) + timedelta(hours=-6)).time()
+                    ))
+                message: Message = await ctx.send(f"Choose your conquest timeslot!\n`{tabulate(timeslots_table, headers=titles,tablefmt='plain')}`")
+                await asyncio.gather(*tuple(message.add_reaction(emoji.value) for emoji in EMOJI_TO_TS_MAPPING.keys()))
             await ctx.message.delete()
 
         @bot.command(name="doConquest", aliases=["dc", "doc", "do"])
@@ -924,24 +927,22 @@ class Lammy:
             while True:
                 next_conquest = get_next_conquest()
 
-                def users_string(emoji):
-                    return ', '.join(user.mention for user in self.conquest_user_data.get(next_conquest.time().replace(tzinfo=timezone.utc), dict()).get(emoji, list()))
+                def users_string():
+                    return ', '.join(user.mention for user in self.conquest_user_data.get(next_conquest.time().replace(tzinfo=timezone.utc), list()))
                 diff = next_conquest - datetime.now(tz=timezone.utc)
-                if diff > timedelta(minutes=10):
-                    await asyncio.sleep(abs((diff + timedelta(minutes=-10)).total_seconds()))
-                    await channel.send(f"Conquest is up in 10 minutes! {users_string(Emojis.TEN)}")
-                    diff = next_conquest - datetime.now(tz=timezone.utc)
                 if diff > timedelta(minutes=3):
                     await asyncio.sleep(abs((diff + timedelta(minutes=-3)).total_seconds()))
-                    await channel.send(f"Conquest is up in 3 minutes! {users_string(Emojis.THREE)}")
+                    await channel.send(f"Conquest is up in 3 minutes! {users_string()}")
                     diff = next_conquest - datetime.now(tz=timezone.utc)
                 await asyncio.sleep(abs(diff.total_seconds()))
-                await channel.send(f"Conquest is up! {users_string(Emojis.ZERO)}")
+                await channel.send(f"Conquest is up! {users_string()}")
 
         @bot.command(name="timetonextconquest", aliases=["timeconquest", "tc", "tconquest", "ct", "conquesttime", "nc", "nextconquest"])
         @self.requires_member_role
         async def time_to_next_conquest(ctx: Context):
-            await ctx.send(f"Time until next conquest: {get_next_conquest() - datetime.now(tz=timezone.utc)}")
+            await ctx.send(f"Time until next conquest (#"
+                           f"{TS_TO_EMOJI_MAPPING.get(get_next_conquest().time().replace(tzinfo=timezone.utc), Emojis.UNKNOWN).value}):"
+                           f" {get_next_conquest() - datetime.now(tz=timezone.utc)}")
 
         @bot.command(name='ask', brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
         @self.requires_admin_role
