@@ -559,6 +559,7 @@ class Lammy:
                 if not demon_canceled and self.demon_task.exception():
                     exception = self.demon_task.exception()
                     u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
+                self.current_nm_order_index = 0
                 await ctx.send('Successfully stopped all tasks!')
             except Exception as e:
                 u.err('Couldn\'t cancel task: ' + repr(e), has_to_print)
