@@ -62,8 +62,14 @@ class ConfigurationSaver:
                 self._running_bot.demon2 = conf["demons"][1]
                 self._running_bot.sp_colo_nm_order = conf["sporder"]
                 self._running_bot.nm_order = conf["order"]
+                if "conquest_channel_data" in conf:
+                    self._running_bot.conquest_channel_data = conf["conquest_channel_data"]
+                if "conquest_user_data" in conf:
+                    self._running_bot.conquest_user_data = conf["conquest_user_data"]
                 if conf["is_started"]:
                     asyncio.ensure_future(self._running_bot.start_bot_waiting(None))
+                if "is_started_conquest" in conf and conf["is_started_conquest"]:
+                    asyncio.ensure_future(self._running_bot.start_bot_conquest_pings(None))
 
     @staticmethod
     def role_from_id(guild, search_role):
@@ -86,5 +92,8 @@ class ConfigurationSaver:
             channel_data=bot.colo_channel_data,
             is_started=bot.colo_task is not None and bot.demon_task is not None,
             order=bot._nm_order,
-            sporder=bot._sp_colo_nm_order
+            sporder=bot._sp_colo_nm_order,
+            conquest_channel_data=bot.conquest_channel_data,
+            conquest_user_data=bot.conquest_user_data,
+            is_started_conquest=bot.conquest_task is not None
         )

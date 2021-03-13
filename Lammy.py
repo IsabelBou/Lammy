@@ -1,7 +1,7 @@
 import asyncio
 import re
 import traceback
-from datetime import datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from functools import wraps
 from itertools import groupby, starmap
 from typing import Dict, List
@@ -17,7 +17,8 @@ from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
                     GUILD_ROLE_NAME, REARGUARD_ROLE_NAME, VANGUARD_ROLE_NAME,
                     AssignmentData, Briefs, Emojis, Helps, Usages,
                     has_to_print)
-from config.config import EMOJIS_TO_WORD_MAPPING
+from config.config import (CONQUEST_TIMESLOTS, EMOJIS_TO_WORD_MAPPING,
+                           get_next_conquest)
 from config.dataclasses import NightmareData, User
 from CustomHelpCommand import CustomHelpCommand
 
@@ -28,13 +29,20 @@ class Lammy:
         self.bot = Bot(command_prefix=BOT_PREFIX,
                        case_insensitive=CASE_INSENSITIVE, intents=DISCORD_INTENT)
         self.bot.help_command = CustomHelpCommand()
+        self.conquest_task = None
         self.colo_task = None
         self.demon_task = None
         self.is_winning = False
         self.retards = 0  # Summon delay of players summoning nightmares
         self.demon1 = None
         self.demon2 = None
+
+        self.start_bot_conquest_pings = None
+        self.conquest_channel_data = (None, None)  # Tuple of (channel_id, guild_id)
+        self.conquest_user_data: Dict[time, Dict[Emojis, List[User]]] = {ts: dict() for ts in CONQUEST_TIMESLOTS}
+
         self.colo_channel_data = (None, None)  # Tuple of (channel_id, guild_id)
+
         self.start_bot_waiting = None
         self._nm_order: List[NightmareData] = list()
         self._sp_colo_nm_order: List[NightmareData] = list()
@@ -105,6 +113,10 @@ class Lammy:
     @property
     def guild(self):
         return self.bot.get_guild(self.colo_channel_data[1])
+
+    @property
+    def conquest_channel(self):
+        return self.bot.get_channel(self.conquest_channel_data[0])
 
     @property
     def current_assignment(self):
@@ -224,17 +236,41 @@ class Lammy:
                     return True
             return False
 
+        async def update_conquest_ts_users(message: Message):
+            timeslot_match = re.match("React to this message to be pinged in ts([0-9])", message.content, re.IGNORECASE)
+            if timeslot_match:
+                timeslot_index = int(timeslot_match.group(1)) - 1
+                timeslot = CONQUEST_TIMESLOTS[timeslot_index]
+                if not timeslot in self.conquest_user_data:
+                    self.conquest_user_data[timeslot] = dict()
+                for reaction in message.reactions:
+                    try:
+                        emoji = Emojis(str(reaction.emoji))
+                    except ValueError:
+                        continue
+                    users = [user async for user in reaction.users() if user.mention != bot.user.mention and isinstance(user, DiscordMember)]
+
+                    self.conquest_user_data[timeslot][emoji] = [User(user.name, user.mention) for user in users]
+
+        async def handle_reaction_on_message(payload):
+            message = await message_from_payload(payload)
+            if message.author.mention == bot.user.mention:
+                if len(message.embeds):
+                    await update_equiped_nms_from_message(message)
+                else:
+                    await update_conquest_ts_users(message)
+
         @bot.event
         async def on_raw_reaction_add(payload):
-            await update_equiped_nms_from_message(await message_from_payload(payload))
+            await handle_reaction_on_message(payload)
 
         @bot.event
         async def on_raw_reaction_remove(payload):
-            await update_equiped_nms_from_message(await message_from_payload(payload))
+            await handle_reaction_on_message(payload)
 
         @bot.event
         async def on_raw_reaction_clear(payload):
-            await update_equiped_nms_from_message(await message_from_payload(payload))
+            await handle_reaction_on_message(payload)
 
         @bot.command(name='setadmin', aliases=['sa'], help=Helps.setadmin, brief=Briefs.setadmin, usage=Usages.setadmin)
         async def set_admin(ctx: Context, *args):
@@ -288,7 +324,8 @@ class Lammy:
             channel = self.guild.get_channel(self.colo_channel_data[0])
             self.colo_task = bot.loop.create_task(colosseum())
             self.demon_task = bot.loop.create_task(demon())
-            await channel.send("Waiting for colosseum to start!")
+            if ctx is not None:
+                await channel.send("Waiting for colosseum to start!")
         self.start_bot_waiting = start
 
         @bot.command(name="afk", help=Helps.afk, brief=Briefs.afk, usage=Usages.afk)
@@ -520,9 +557,11 @@ class Lammy:
                 colo_canceled = self.colo_task.cancel()
                 demon_canceled = self.demon_task.cancel()
                 if not colo_canceled and self.colo_task.exception():
-                    u.err(repr(self.colo_task.exception()), has_to_print)
+                    exception = self.colo_task.exception()
+                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
                 if not demon_canceled and self.demon_task.exception():
-                    u.err(repr(self.demon_task.exception()), has_to_print)
+                    exception = self.demon_task.exception()
+                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
                 await ctx.send('Successfully stopped all tasks!')
             except Exception as e:
                 u.err('Couldn\'t cancel task: ' + repr(e), has_to_print)
@@ -832,11 +871,82 @@ class Lammy:
             u.nightmare_scrapper.reload_nm_data()
             await ctx.send("Finished updating nightmare data! Now everything's up to date!")
 
+        @bot.command(name="askConquest", aliases=["ac", "conquest", "askc"])
+        @self.requires_admin_role
+        async def ask_conquest(ctx: Context):
+            already_sent_messages = False
+            async for message in ctx.history():
+                if message.author.mention == bot.user.mention and message.reactions and message.content.startswith(
+                        "React to this message to be pinged in ts"):
+                    await update_conquest_ts_users(message)
+                    already_sent_messages = True
+            if not already_sent_messages:
+                for index, ts in enumerate(CONQUEST_TIMESLOTS):
+                    message = await ctx.send(f"React to this message to be pinged in ts{index+1} ({ts.hour}:{ts.minute}, GMT)")
+                    await message.add_reaction(Emojis.TEN.value)
+                    await message.add_reaction(Emojis.THREE.value)
+                    await message.add_reaction(Emojis.ZERO.value)
+            await ctx.message.delete()
+
+        @bot.command(name="doConquest", aliases=["dc", "doc", "do"])
+        @self.requires_admin_role
+        async def do_conquest_pings(ctx: Context):
+            try:
+                self.conquest_task.cancel()
+            except:
+                pass
+            if ctx is not None:
+                self.conquest_channel_data = ctx.channel.id, ctx.guild.id
+            channel = self.conquest_channel
+            self.conquest_task = bot.loop.create_task(do_conquest_message())
+            if ctx is not None:
+                await channel.send(f"Successfully started waiting for next conquest!")
+                await ctx.message.delete()
+
+        self.start_bot_conquest_pings = do_conquest_pings
+
+        @bot.command(name="stopConquest", aliases=["sc", "stopc", "cs", "conquests", "conqueststop"])
+        @self.requires_admin_role
+        async def stop_conquest_pings(ctx: Context):
+            try:
+                conquest_canceled = self.conquest_task.cancel()
+                if not conquest_canceled and self.conquest_task.exception():
+                    exception = self.conquest_task.exception()
+                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
+                await ctx.send('Successfully stopped conquest pings!')
+            except Exception as e:
+                u.err('Couldn\'t cancel task: ' + repr(e), has_to_print)
+                print(traceback.format_exception(type(e), e, e.__traceback__))
+                await ctx.send("Couldn't stop conquest pings! Please call my administrators!")
+
+        async def do_conquest_message():
+            channel = self.conquest_channel
+            while True:
+                next_conquest = get_next_conquest()
+                now = datetime.now(tz=timezone.utc)
+
+                def users_string(emoji):
+                    return ', '.join(user for user in self.conquest_user_data.get(next_conquest.time().replace(tzinfo=timezone.utc), dict()).get(emoji, list()))
+                diff = next_conquest - now
+                if diff > timedelta(minutes=10):
+                    await asyncio.sleep(abs((diff + timedelta(minutes=-10)).total_seconds()))
+                    await channel.send(f"Conquest is up in 10 minutes! {users_string(Emojis.TEN)}")
+                if diff > timedelta(minutes=3):
+                    await asyncio.sleep(abs((diff + timedelta(minutes=-3)).total_seconds()))
+                    await channel.send(f"Conquest is up in 3 minutes! {users_string(Emojis.THREE)}")
+                await asyncio.sleep(abs(diff.total_seconds()))
+                await channel.send(f"Conquest is up! {users_string(Emojis.ZERO)}")
+
+        @bot.command(name="timetonextconquest", aliases=["timeconquest", "tc", "tconquest", "ct", "conquesttime", "nc", "nextconquest"])
+        @self.requires_member_role
+        async def time_to_next_conquest(ctx: Context):
+            await ctx.send(f"Time until next conquest: {get_next_conquest() - datetime.now(tz=timezone.utc)}")
+
         @bot.command(name='ask', brief=Briefs.ask, help=Helps.ask, usage=Usages.ask)
         @self.requires_admin_role
         async def ask_nightmare_assignments(ctx: Context, *args):
             if len(args) == 0:
-                history = [message for message in await ctx.history(oldest_first=False).flatten() if message.embeds and message.reactions]
+                history = [message async for message in await ctx.history(oldest_first=False) if message.embeds and message.reactions]
                 history.sort(key=lambda message: (message.embeds[0].title, message.created_at))
                 filtered = list()
                 for _, group in groupby(history, key=lambda message: message.embeds[0].title):
