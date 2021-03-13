@@ -923,17 +923,18 @@ class Lammy:
             channel = self.conquest_channel
             while True:
                 next_conquest = get_next_conquest()
-                now = datetime.now(tz=timezone.utc)
 
                 def users_string(emoji):
                     return ', '.join(user.mention for user in self.conquest_user_data.get(next_conquest.time().replace(tzinfo=timezone.utc), dict()).get(emoji, list()))
-                diff = next_conquest - now
+                diff = next_conquest - datetime.now(tz=timezone.utc)
                 if diff > timedelta(minutes=10):
                     await asyncio.sleep(abs((diff + timedelta(minutes=-10)).total_seconds()))
                     await channel.send(f"Conquest is up in 10 minutes! {users_string(Emojis.TEN)}")
+                    diff = next_conquest - datetime.now(tz=timezone.utc)
                 if diff > timedelta(minutes=3):
                     await asyncio.sleep(abs((diff + timedelta(minutes=-3)).total_seconds()))
                     await channel.send(f"Conquest is up in 3 minutes! {users_string(Emojis.THREE)}")
+                    diff = next_conquest - datetime.now(tz=timezone.utc)
                 await asyncio.sleep(abs(diff.total_seconds()))
                 await channel.send(f"Conquest is up! {users_string(Emojis.ZERO)}")
 
