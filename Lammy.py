@@ -879,7 +879,7 @@ class Lammy:
                     already_sent_message = True
             if not already_sent_message:
                 timeslots_table = list()
-                titles = "Timeslot", "EU gang", "Jewish idiot", "US gang"
+                titles = "TS", "EU gang", "Jewish idiot", "US gang"
                 for ts in CONQUEST_TIMESLOTS:
                     timeslots_table.append((
                         TS_TO_EMOJI_MAPPING[ts].value,
