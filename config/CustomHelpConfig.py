@@ -300,6 +300,39 @@ EMBED_MAPPING = dict(
             )
         ]
     ),
+    askConquest=dict(
+        title="**Ask for conquest availability**",
+        description="Command names: `{0}askConquest`, `{0}ac`, `{0}conquest`, `{0}askc`, `{0}ca`, `{0}conquestAsk`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+       		dict(
+                name="{0}askConquest".format(BOT_PREFIX),
+                value="Sends a message with the conquest timeslots and their associated emotes so that users can react to said emotes to select timeslots they want to be pinged for."
+            )
+        ]
+    ), 
+    doConquest=dict(
+        title="**Start the conquest pinging process**",
+        description="Command names: `{0}doConquest`, `{0}dc`, `{0}doc`, `{0}do`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+       		dict(
+                name="{0}doConquest".format(BOT_PREFIX),
+                value="Allows the bot to ping members based on their reacts to the `askConquest` message."
+            )
+        ]
+    ), 
+    stopConquest=dict(
+        title="**Stops the the conquest pinging process**",
+        description="Command names: `{0}stopConquest`, `{0}sc`, `{0}stopc`, `{0}cs`, `{0}conquests`, `{0}conqueststop`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+       		dict(
+                name="{0}stopConquest".format(BOT_PREFIX),
+                value="Stops pinging members for conquest, based on their reacts to the `askConquest` message."
+            )
+        ]
+    ),
     update=dict(
         title="**Update**",
         description="Command names: `{0}Update`".format(BOT_PREFIX),
