@@ -17,6 +17,7 @@ class CustomHelpCommand(DefaultHelpCommand):
         embed.add_field(name="Assignments & Order", value="`assignment`, `order`, `update`, *`ask`*", inline=False)        
         embed.add_field(name="Colosseum actions", value="*`afk`*, *`start`*, *`delay`*, *`push`*, *`replace`*, *`stop`*", inline=False)
         embed.add_field(name="SP Colosseum", value="*`setSPcolo`*, *`SPOrder`*", inline=False)
+        embed.add_field(name="Conquest", value="*`askConquest`*, *`doConquest`*, *`stopConquest`*", inline=False)  
         await destination.send(embed=embed)
 
     async def send_command_help(self, command: Command):
