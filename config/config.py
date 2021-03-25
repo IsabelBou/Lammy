@@ -70,4 +70,6 @@ def get_next_conquest(delta: timedelta = timedelta()) -> datetime:
         if datetime.combine(date.min, ts, tzinfo=timezone.utc) > datetime.combine(date.min, now.time(), tzinfo=timezone.utc)
     ) or (datetime.combine(date.min, ts, tzinfo=timezone.utc) for ts in CONQUEST_TIMESLOTS)).time()
     destination = datetime.combine(now.date(), next_conquest_time, tzinfo=timezone.utc) + delta
+    if next_conquest_time < now.time():
+        destination += timedelta(days=1)
     return destination
