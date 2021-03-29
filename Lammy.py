@@ -884,9 +884,9 @@ class Lammy:
                 for ts in CONQUEST_TIMESLOTS:
                     timeslots_table.append((
                         TS_TO_EMOJI_MAPPING[ts].value,
-                        (datetime.combine(date.min, ts) + timedelta(hours=1)).time(),
                         (datetime.combine(date.min, ts) + timedelta(hours=2)).time(),
-                        (datetime.combine(date.max, ts) + timedelta(hours=-6)).time()
+                        (datetime.combine(date.min, ts) + timedelta(hours=3)).time(),
+                        (datetime.combine(date.max, ts) + timedelta(hours=-5)).time()
                     ))
                 message: Message = await ctx.send(f"Choose your conquest timeslot!\n`{tabulate(timeslots_table, headers=titles,tablefmt='plain')}`")
                 await asyncio.gather(*tuple(message.add_reaction(emoji.value) for emoji in EMOJI_TO_TS_MAPPING.keys()))
