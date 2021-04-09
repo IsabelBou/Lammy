@@ -425,11 +425,15 @@ class Lammy:
                 #       Notifies guild that colo is starting in 3 minutes (20:57)
                 await self.wait_for_colo(timedelta(minutes=-3))
                 if self.demon1 is None or self.demon2 is None:
-                    await channel.send("Colosseum is about to start, please set today's demons!")
-                await channel.send(u.getString('colosseum_about_to_start', 'info', u.getRole(guild_roles, GUILD_ROLE_NAME).mention))
+                    await channel.send(f"{u.getString('colosseum_about_to_start', 'info', u.getRole(guild_roles, GUILD_ROLE_NAME).mention)}\nAlso please set today's demons!")
+                else:
+                    await channel.send(u.getString('colosseum_about_to_start', 'info', u.getRole(guild_roles, GUILD_ROLE_NAME).mention))
                 u.log(u.getString('colosseum_about_to_start', 'info',
                                   u.getRole(guild_roles, GUILD_ROLE_NAME).mention), has_to_print)
-                #
+                await self.wait_for_colo()
+                await channel.send(f"{u.getRole(guild_roles, GUILD_ROLE_NAME).mention} Colo is up!")
+                if self.demon1 is None or self.demon2 is None:
+                    continue
                 #       Notifies Vanguards and Rearguards, individually, what the first demon's summoning weapons are (21:03)
                 await self.wait_for_colo(timedelta(minutes=3))
                 await channel.send(f"{u.getRole(guild_roles, GUILD_ROLE_NAME).mention}, demon will approach soon!")
