@@ -701,14 +701,14 @@ class Lammy:
         def equipped_nms_string(nm: NightmareData):
             data = self.equipped_nms.get(nm)
             return "\n".join(
-                f"**{EMOJIS_TO_WORD_MAPPING[emoji]}**: {', '.join(user.name for user in data[emoji])}"
+                f"**{EMOJIS_TO_WORD_MAPPING.get(emoji, 'Unknown')}**: {', '.join(user.name for user in data[emoji])}"
                 for emoji in Emojis
                 if emoji in data
             )
 
         def nms_of_user_string(nms_of_user: Dict[Emojis, List[NightmareData]]):
             return "\n".join(
-                f"**{EMOJIS_TO_WORD_MAPPING[emoji]}**: {', '.join(nm.short_name for nm in nms_of_user[emoji])}"
+                f"**{EMOJIS_TO_WORD_MAPPING.get(emoji, 'Unknown')}**: {', '.join(nm.short_name for nm in nms_of_user[emoji])}"
                 for emoji in Emojis if emoji in nms_of_user
             )
 
