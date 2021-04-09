@@ -333,6 +333,17 @@ EMBED_MAPPING = dict(
             )
         ]
     ),
+    nextConquest=dict(
+        title="**Stops the the conquest pinging process**",
+        description="Command names: `{0}nextConquest`, `{0}nc`, `{0}timetonextconquest`, `{0}timeconquest`, `{0}ct`, `{0}ct`, `{0}tconquest`, `{0}conquesttime`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+       		dict(
+                name="{0}nextConquest".format(BOT_PREFIX),
+                value="Displays the time left (In hours, minutes and seconds) until the next conquest timeslot."
+            )
+        ]
+    ),
     update=dict(
         title="**Update**",
         description="Command names: `{0}Update`".format(BOT_PREFIX),
