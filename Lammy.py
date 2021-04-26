@@ -199,8 +199,10 @@ class Lammy:
             if message.author.mention != lammy_mention or not message.embeds:
                 return
             nm = u.get_nm_data_from_message(message.embeds[0].title)
+            if not nm:
+                return
             if nm not in self.equipped_nms:
-                self.equipped_nms[nm] = {emoji: list() for emoji in Emojis}
+                self.equipped_nms[nm] = {emoji: list() for emoji in EMOJIS_TO_WORD_MAPPING.keys()}
             users_who_have_equipped = set()
             for reaction in message.reactions:
                 try:
