@@ -937,12 +937,10 @@ class Lammy:
                 def users_string():
                     return ', '.join(user.mention for user in self.conquest_user_data.get(next_conquest.time().replace(tzinfo=timezone.utc), list()))
                 diff = next_conquest - datetime.now(tz=timezone.utc)
-                if diff > timedelta(minutes=3):
-                    await asyncio.sleep(abs((diff + timedelta(minutes=-3)).total_seconds()))
-                    await channel.send(f"Conquest is up in 3 minutes! {users_string()}")
+                if diff > timedelta(minutes=1):
+                    await asyncio.sleep(abs((diff + timedelta(minutes=-1)).total_seconds()))
+                    await channel.send(f"Conquest is up in 1 minutes! {users_string()}")
                     diff = next_conquest - datetime.now(tz=timezone.utc)
-                await asyncio.sleep(abs(diff.total_seconds()))
-                await channel.send(f"Conquest is up! {users_string()}")
 
         @bot.command(name="timetonextconquest", aliases=["timeconquest", "tc", "tconquest", "ct", "conquesttime", "nc", "nextconquest"])
         @self.requires_member_role
