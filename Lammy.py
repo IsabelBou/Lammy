@@ -542,6 +542,8 @@ class Lammy:
                 embed = nm.embed
                 if nm in self.equipped_nms and any(self.equipped_nms[nm].values()):
                     embed.add_field(name="Members Equipped", value=equipped_nms_string(nm), inline=False)
+                else:
+                    embed.add_field(name='Members Equipped', value=f'No member data for {nm.short_name} :(')
                 await ctx.send(embed=embed)
             elif user:
                 nms_of_user = self.nms_of_user(user)
