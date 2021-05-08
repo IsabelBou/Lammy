@@ -30,9 +30,6 @@ class NightmareData:
     resource_name: str
     _short_name: str = field(default=str())
 
-    def __hash__(self) -> int:
-        return hash(self.card_id)
-
     @classmethod
     def from_series(cls, series: Series):
         as_dict = series.to_dict()
@@ -67,6 +64,12 @@ class NightmareData:
                         value=f"Duration: {self.story_skill.duration} seconds.\nLead time: {self.story_skill.lead_time} seconds.")
         embed.set_image(url=f"https://sinoalice.game-db.tw/images/card/CardS{str(self.resource_name).rjust(4, '0')}.png")
         return embed
+
+    def __hash__(self) -> int:
+        return hash(self.card_id)
+
+    def __eq__(self, o: object) -> bool:
+        return hasattr(o, 'card_id') and o.card_id == self.card_id
 
 
 @dataclass
