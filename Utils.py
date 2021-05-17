@@ -1,11 +1,9 @@
 import datetime as date
 import os
 import xml.etree.ElementTree as ET
-from time import sleep
-from typing import Union
+from typing import Optional, Union
 
 from discord.member import Member
-from numpy.testing._private.utils import measure
 
 from config import NightmareData, User
 from config.dataclasses import AssignmentData
@@ -45,6 +43,13 @@ def get_nm_mention(roles, nm: NightmareData):
         if str(role).lower() == nm.name.lower():
             return role.mention
     return nm.name
+
+
+def nm_by_id(nm_id: str) -> Optional[NightmareData]:
+    df = nightmare_scrapper.nm_by_resource_id(nm_id)
+    if df.empty or len(df) > 1:
+        return None
+    return NightmareData.from_series(df.iloc[0])
 
 
 def get_nm_data_from_message(message):

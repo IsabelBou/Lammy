@@ -40,6 +40,10 @@ class NightmareScrapper:
         data = self.nm_data
         return data[data.name.str.contains(search_string, regex=False, case=False)]
 
+    def nm_by_resource_id(self, resource_id: str) -> pd.DataFrame:
+        data = self.nm_data
+        return data[data.resource_name.astype(str).str.contains(resource_id, regex=False, case=False)]
+
     def nm_lookup(self, search_string: str) -> pd.DataFrame:
         data = self.nm_data
         return data[

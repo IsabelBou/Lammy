@@ -198,7 +198,7 @@ class Lammy:
 
             if message.author.mention != lammy_mention or not message.embeds:
                 return
-            nm = u.get_nm_data_from_message(message.embeds[0].title)
+            nm = u.nm_by_id(str(int(message.embeds[0].image.url[46:50])))
             if not nm:
                 return
             if nm not in self.equipped_nms:
