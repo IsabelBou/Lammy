@@ -969,7 +969,6 @@ class Lammy:
             nm = u.get_nm_data_from_message(nm_string)
             if nm is not None:
                 embed = nm.embed
-                embed.title = embed.title
                 message: Message = await ctx.send(embed=embed)
                 await message.add_reaction(Emojis.L.value)
                 await message.add_reaction(Emojis.S.value)
