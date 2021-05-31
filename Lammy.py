@@ -251,11 +251,42 @@ class Lammy:
                     users = [user async for user in reaction.users() if user.mention != bot.user.mention and isinstance(user, DiscordMember)]
                     self.conquest_user_data[timeslot] = [User(user.name, user.mention) for user in users]
 
+        async def confirm_user_deletion(message: Message):
+            confirmed = False
+            someone_reacted = False
+            for reaction in message.reactions:
+                async for user in reaction.users():
+                    if user.mention != bot.user.mention:
+                        someone_reacted = True
+                        if str(reaction.emoji) == Emojis.V.value:
+                            confirmed = True
+            if confirmed:
+                await delete_user_reaction(message)
+            elif someone_reacted:
+                await message.delete()
+
+        async def delete_user_reaction(message: Message):
+            user_to_remove = message.content[32:-31]
+            history = [message async for message in message.channel.history(oldest_first=False) if message.embeds and message.reactions]
+            history.sort(key=lambda message: (message.embeds[0].title, message.created_at))
+            filtered: List[Message] = list()
+            for _, group in groupby(history, key=lambda message: message.embeds[0].title):
+                group = list(group)
+                filtered.append(group[-1])
+            for filtered_message in filtered:
+                for reaction in filtered_message.reactions:
+                    async for user in reaction.users():
+                        if user.name == user_to_remove:
+                            await reaction.remove(user)
+            await message.delete()
+
         async def handle_reaction_on_message(payload):
             message = await message_from_payload(payload)
             if message.author.mention == bot.user.mention:
                 if len(message.embeds):
                     await update_equiped_nms_from_message(message)
+                elif message.content.startswith('Are you sure you want to delete'):
+                    await confirm_user_deletion(message)
                 else:
                     await update_conquest_ts_users(message)
 
@@ -943,6 +974,23 @@ class Lammy:
                     await asyncio.sleep(abs((diff + timedelta(minutes=-1)).total_seconds()))
                     await channel.send(f"Conquest is up in 1 minutes! {users_string()}")
                     diff = next_conquest - datetime.now(tz=timezone.utc)
+
+        @bot.command(name="remove", aliases=["ru", "removeuser"])
+        @self.requires_admin_role
+        async def remove_user_from_nightmaredata(ctx: Context, *args):
+            await ctx.message.delete()
+            if len(args) == 0:
+                msg = await ctx.send(f"Please enter a username to delete!")
+                return await msg.delete(delay=3)
+            user_string = " ".join(args)
+            user = u.get_user_from_username(user_string, ctx, strict=False)
+            if user:
+                message = await ctx.send(f"Are you sure you want to delete {user.name} from equipped nightmares data?")
+                await message.add_reaction(Emojis.V.value)
+                await message.add_reaction(Emojis.X.value)
+            else:
+                msg = await ctx.send(f"Couldn't find user {user.name}")
+                return await msg.delete(delay=3)
 
         @bot.command(name="timetonextconquest", aliases=["timeconquest", "tc", "tconquest", "ct", "conquesttime", "nc", "nextconquest"])
         @self.requires_member_role
