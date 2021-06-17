@@ -67,10 +67,12 @@ class ConfigurationSaver:
                 
                 if isinstance(list(conf["conquest_user_data"].values())[0], list):
                     self._running_bot.conquest_user_data = conf["conquest_user_data"]
-                if conf["is_started"]:
-                    asyncio.ensure_future(self._running_bot.start_bot_waiting(None))
+                if conf.get("is_colo_task"):
+                    await asyncio.ensure_future(self._running_bot.start_colo_task(None))
+                if conf.get("is_demon_task"):
+                    await asyncio.ensure_future(self._running_bot.start_demon_task(None))
                 if conf["is_started_conquest"]:
-                    asyncio.ensure_future(self._running_bot.start_bot_conquest_pings(None))
+                    await asyncio.ensure_future(self._running_bot.start_bot_conquest_pings(None))
 
     @staticmethod
     def role_from_id(guild, search_role):
@@ -91,7 +93,8 @@ class ConfigurationSaver:
             colo_time=bot.colo_time,
             demons=(bot.demon1, bot.demon2),
             channel_data=bot.colo_channel_data,
-            is_started=bot.colo_task is not None and bot.demon_task is not None,
+            is_colo_task=bot.colo_task is not None,
+            is_demon_task=bot.demon_task is not None,
             order=bot._nm_order,
             sporder=bot._sp_colo_nm_order,
             conquest_channel_data=bot.conquest_channel_data,

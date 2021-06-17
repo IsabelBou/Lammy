@@ -356,7 +356,40 @@ class Lammy:
             self.demon_task = bot.loop.create_task(demon())
             if ctx is not None:
                 await channel.send("Waiting for colosseum to start!")
-        self.start_bot_waiting = start
+
+        @bot.command(name='startdemon')
+        @self.requires_admin_role
+        async def start_demon_task(ctx: Context):
+            try:
+                self.demon_task.cancel()
+            except:
+                pass
+            if ctx is not None:
+                self.colo_channel_data = (ctx.channel.id, ctx.guild.id)
+            while not len(bot.guilds):
+                await asyncio.sleep(1)
+            channel = self.guild.get_Channel(self.colo_channel_data[0])
+            self.demon_task = bot.loop.create_task(demon())
+            if ctx is not None:
+                await channel.send("Waiting for colosseum to start!")
+        self.start_demon_task = start_demon_task
+
+        @bot.command(name='startnms')
+        @self.requires_admin_role
+        async def start_colo_task(ctx: Context):
+            try:
+                self.colo_task.cancel()
+            except:
+                pass
+            if ctx is not None:
+                self.colo_channel_data = (ctx.channel.id, ctx.guild.id)
+            while not len(bot.guilds):
+                await asyncio.sleep(1)
+            channel = self.guild.get_Channel(self.colo_channel_data[0])
+            self.colo_task = bot.loop.create_task(colosseum())
+            if ctx is not None:
+                await channel.send("Waiting for colosseum to start!")
+        self.start_colo_task = start_colo_task
 
         @bot.command(name="afk", help=Helps.afk, brief=Briefs.afk, usage=Usages.afk)
         @self.requires_member_role
