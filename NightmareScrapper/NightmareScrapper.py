@@ -57,12 +57,14 @@ class NightmareScrapper:
     def _get_nm_dataframe():
         def get_jp_nm_data():
             nm_jp_data = pd.read_json(NM_JP_JSON_URL)
-            nm_jp_data = nm_jp_data[(nm_jp_data["cardType"] == 3) & (nm_jp_data["evolutionLevel"] > 0)]
+            nm_jp_data = nm_jp_data[nm_jp_data["cardType"] == 3]
+            nm_jp_data = nm_jp_data[nm_jp_data.groupby('cardUniqueId').evolutionLevel.transform(max) == nm_jp_data.evolutionLevel]
             return nm_jp_data
 
         def get_nm_data():
             nm_data = pd.read_json(NM_JSON_URL)
-            nm_data = nm_data[(nm_data["cardType"] == 3) & (nm_data["evolutionLevel"] > 0)]
+            nm_data = nm_data[nm_data["cardType"] == 3]
+            nm_data = nm_data[nm_data.groupby('cardUniqueId').evolutionLevel.transform(max) == nm_data.evolutionLevel]
             return nm_data
 
         def get_nm_skills_data():
