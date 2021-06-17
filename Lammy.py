@@ -368,7 +368,7 @@ class Lammy:
                 self.colo_channel_data = (ctx.channel.id, ctx.guild.id)
             while not len(bot.guilds):
                 await asyncio.sleep(1)
-            channel = self.guild.get_Channel(self.colo_channel_data[0])
+            channel = self.guild.get_channel(self.colo_channel_data[0])
             self.demon_task = bot.loop.create_task(demon())
             if ctx is not None:
                 await channel.send("Waiting for colosseum to start!")
@@ -385,7 +385,7 @@ class Lammy:
                 self.colo_channel_data = (ctx.channel.id, ctx.guild.id)
             while not len(bot.guilds):
                 await asyncio.sleep(1)
-            channel = self.guild.get_Channel(self.colo_channel_data[0])
+            channel = self.guild.get_channel(self.colo_channel_data[0])
             self.colo_task = bot.loop.create_task(colosseum())
             if ctx is not None:
                 await channel.send("Waiting for colosseum to start!")
