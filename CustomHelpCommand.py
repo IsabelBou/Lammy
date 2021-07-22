@@ -14,7 +14,7 @@ class CustomHelpCommand(DefaultHelpCommand):
         embed.add_field(name="Initial Setup", value="*`setadmin`*, *`setmembers`*, *`time`*", inline=False)
         embed.add_field(name="Colosseum demon settings", value="`demonlist`, *`setdemons`*, `getdemons`, `demonsrearguard`, `demonsvanguard`", inline=False)
         embed.add_field(name="Nightmare Information", value="`info`, `infostory`,`update`, `check`, `lookup`", inline=False)       
-        embed.add_field(name="Assignments & Order", value="`assignment`, `order`, `update`, *`ask`*", inline=False)        
+        embed.add_field(name="User data", value="`assignment`, `order`, `update`, *`ask`*, *`remove`*", inline=False)        
         embed.add_field(name="Colosseum actions", value="*`afk`*, *`start`*, *`delay`*, *`push`*, *`replace`*, *`stop`*", inline=False)
         embed.add_field(name="SP Colosseum", value="*`setSPcolo`*, *`SPOrder`*", inline=False)
         embed.add_field(name="Conquest", value="*`askConquest`*, *`doConquest`*, *`stopConquest`*", inline=False)  
