@@ -264,6 +264,17 @@ EMBED_MAPPING = dict(
             )
         ]
     ),    
+    lookup=dict(
+        title="**Remove user**",
+        description="Command names: `{0}remove`, `{0}ru`, `{0}removeuser`".format(BOT_PREFIX),
+        color=0x75ebdb,
+        fields=[
+            dict(
+                name="{0}remove `<user>`".format(BOT_PREFIX),
+                value="Removes a user from the availability information and assignment list."
+            )
+        ]
+    ),    
     setspcolo=dict(
         title="**Set SP Colosseum**",
         description="Command names: `{0}SetSPcolo`, `{0}SPcolo`, `{0}ToggleSP`, `{0}ToggleColo`".format(BOT_PREFIX),
