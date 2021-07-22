@@ -271,7 +271,7 @@ EMBED_MAPPING = dict(
         fields=[
             dict(
                 name="{0}remove `<user>`".format(BOT_PREFIX),
-                value="Removes a user from the availability information and assignment list."
+                value="Removes a user from the assignment list and clears their availability information by removing said user's reactions in the `!ask` messages."
             )
         ]
     ),    
