@@ -263,8 +263,8 @@ EMBED_MAPPING = dict(
                 value="Looks for nightmares whose description matches with the string inputted."
             )
         ]
-    ),    
-    lookup=dict(
+    ),
+    remove=dict(
         title="**Remove user**",
         description="Command names: `{0}remove`, `{0}ru`, `{0}removeuser`".format(BOT_PREFIX),
         color=0x75ebdb,
