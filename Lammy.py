@@ -252,17 +252,17 @@ class Lammy:
                     self.conquest_user_data[timeslot] = [User(user.name, user.mention) for user in users]
 
         async def confirm_user_deletion(message: Message):
-            confirmed = False
-            someone_reacted = False
+            confirmed = None
             for reaction in message.reactions:
                 async for user in reaction.users():
                     if user.mention != bot.user.mention:
-                        someone_reacted = True
                         if str(reaction.emoji) == Emojis.V.value:
                             confirmed = True
+                        elif str(reaction.emoji) == Emojis.X.value:
+                            confirmed = False
             if confirmed:
                 await delete_user_reaction(message)
-            elif someone_reacted:
+            elif confirmed == False:
                 await message.delete()
 
         async def delete_user_reaction(message: Message):
@@ -1017,13 +1017,9 @@ class Lammy:
                 return await msg.delete(delay=3)
             user_string = " ".join(args)
             user = u.get_user_from_username(user_string, ctx, strict=False)
-            if user:
-                message = await ctx.send(f"Are you sure you want to delete {user.name} from equipped nightmares data?")
-                await message.add_reaction(Emojis.V.value)
-                await message.add_reaction(Emojis.X.value)
-            else:
-                msg = await ctx.send(f"Couldn't find user {user.name}")
-                return await msg.delete(delay=3)
+            message = await ctx.send(f"Are you sure you want to delete {user.name} from equipped nightmares data?")
+            await message.add_reaction(Emojis.V.value)
+            await message.add_reaction(Emojis.X.value)
 
         @bot.command(name="timetonextconquest", aliases=["timeconquest", "tc", "tconquest", "ct", "conquesttime", "nc", "nextconquest"])
         @self.requires_member_role
