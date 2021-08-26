@@ -43,7 +43,7 @@ class Emojis(Enum):
 EMOJIS_TO_WORD_MAPPING = {
     Emojis.L: "Evolved",
     Emojis.S: "Unevolved",
-    Emojis.V: "Equiped"
+    Emojis.V: "Equipped"
 }
 
 CONQUEST_TIMESLOTS: Tuple[time] = time(8, 30, tzinfo=timezone.utc), time(11, 30, tzinfo=timezone.utc), time(15, 30, tzinfo=timezone.utc), time(
