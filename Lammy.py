@@ -941,27 +941,29 @@ class Lammy:
             u.nightmare_scrapper.reload_nm_data()
             await ctx.send("Finished updating nightmare data! Now everything's up to date!")
 
-        @bot.command(name="askConquest", aliases=["ac", "conquest", "askc", "ca", "conquestask"])
+        @bot.command(name="updateConquest", aliases=["uc", "updateC"])
         @self.requires_admin_role
-        async def ask_conquest(ctx: Context):
-            already_sent_message = False
+        async def update_conquest_data(ctx: Context):
             async for message in ctx.history():
                 if message.author.mention == bot.user.mention and message.reactions and message.content.startswith(
                         "Choose your conquest timeslot!"):
                     await update_conquest_ts_users(message)
-                    already_sent_message = True
-            if not already_sent_message:
-                timeslots_table = list()
-                titles = "TS", "EU gang", "Jewish idiot", "US gang"
-                for ts in CONQUEST_TIMESLOTS:
-                    timeslots_table.append((
-                        TS_TO_EMOJI_MAPPING[ts].value,
-                        (datetime.combine(date.min, ts) + timedelta(hours=2)).time(),
-                        (datetime.combine(date.min, ts) + timedelta(hours=3)).time(),
-                        (datetime.combine(date.max, ts) + timedelta(hours=-5)).time()
-                    ))
-                message: Message = await ctx.send(f"Choose your conquest timeslot!\n`{tabulate(timeslots_table, headers=titles,tablefmt='plain')}`")
-                await asyncio.gather(*tuple(message.add_reaction(emoji.value) for emoji in EMOJI_TO_TS_MAPPING.keys()))
+
+        @bot.command(name="askConquest", aliases=["ac", "conquest", "askc", "ca", "conquestask"])
+        @self.requires_admin_role
+        async def ask_conquest(ctx: Context):
+            timeslots_table = list()
+            titles = "Timeslot", "UTC", "Your timezone"
+            for ts in CONQUEST_TIMESLOTS:
+                is_last = CONQUEST_TIMESLOTS[-1] == ts
+                timeslots_table.append((
+                    TS_TO_EMOJI_MAPPING[ts].value,
+                    (datetime.combine(date.min, ts)).time(),
+                    f"`<t:{int(datetime.combine(date(2000, 1, 1), ts).timestamp())}:t>{'' if is_last else '`'}"
+                ))
+            timeslots_table[-1][2]
+            message: Message = await ctx.send(f"Choose your conquest timeslot!\n`{tabulate(timeslots_table, headers=titles,tablefmt='plain')}")
+            await asyncio.gather(*tuple(message.add_reaction(emoji.value) for emoji in EMOJI_TO_TS_MAPPING.keys()))
             await ctx.message.delete()
 
         @bot.command(name="doConquest", aliases=["dc", "doc", "do"])
@@ -1047,10 +1049,12 @@ class Lammy:
             if nm is not None:
                 embed = nm.embed
                 message: Message = await ctx.send(embed=embed)
-                await message.add_reaction(Emojis.L.value)
-                await message.add_reaction(Emojis.S.value)
-                await message.add_reaction(Emojis.V.value)
-                await ctx.message.delete()
+                await asyncio.gather(
+                    message.add_reaction(Emojis.L.value),
+                    message.add_reaction(Emojis.S.value),
+                    message.add_reaction(Emojis.V.value),
+                    ctx.message.delete()
+                )
             else:
                 await ctx.send(f"I don't know any nightmare called {nm_string}!")
 
