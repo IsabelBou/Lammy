@@ -79,11 +79,14 @@ class WeaponScrapper:
             wp_skill_data = wp_skill_future.result()
             wp_jp_data = wp_jp_data_future.result()
             wp_data = pd.merge(wp_data, wp_jp_data, on="cardMstId", suffixes=("", "_jp"))
-            merged_data = pd.merge(wp_data, wp_skill_data, on="artMstId")
+            merged_data = pd.merge(wp_data, wp_skill_data, on="skillMstId")
             merged_story_data = pd.merge(wp_data, wp_skill_data, left_on="questArtMstId", right_on="artMstId")
-            merged_data = merged_data[["name_x", "name_y", "description_x", "description_y", "cardMstId", "attribute", "cardDetailType" "shortName", "resourceName_jp"]]
+            merged_data = merged_data[["name_x", "name_y", "description_x", "description_y", "cardMstId", "attribute", "cardDetailType", "typeLabel" "shortName", "resourceName_jp"]]
             merged_data["story_skill_name"] = merged_story_data["name_y"]
             merged_data["story_skill_description"] = merged_story_data["description_y"]
             merged_data["color"] = merged_data["attribute"].map(ATTRIBUTE_TO_COLOR_MAPPING)
+            merged_data["type"] = merged_data["attribute"].map(ATTRIBUTE_TO_TYPE_MAPPING)
+            merged_data["weapon_type"] = merged_data["detailtype"].map(DETAILTYPE_TO_WEAPONTYPE_MAPPING)
             del merged_data["attribute"]
-            return merged_data.rename(columns=dict(name_x="name", cardMstId="card_id", cardDetailType="Weapon_type", resourceName_jp="resource_name", name_y="skill_name", shortName="_short_name"))
+            del merged_data["detailtype"]
+            return merged_data.rename(columns=dict(name_x="name", cardMstId="card_id", "" cardDetailType="Weapon_type", resourceName_jp="resource_name", name_y="skill_name", shortName="_short_name"))
