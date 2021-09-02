@@ -959,7 +959,7 @@ class Lammy:
                 timeslots_table.append((
                     TS_TO_EMOJI_MAPPING[ts].value,
                     (datetime.combine(date.min, ts)).time(),
-                    f"`<t:{int(datetime.combine(date(2000, 1, 1), ts).timestamp())}:t>{'' if is_last else '`'}"
+                    f"`<t:{int(datetime.combine(date(2000, 1, 1), ts + timedelta(hours=1)).timestamp())}:t>{'' if is_last else '`'}"
                 ))
             timeslots_table[-1][2]
             message: Message = await ctx.send(f"Choose your conquest timeslot!\n`{tabulate(timeslots_table, headers=titles,tablefmt='plain')}")
