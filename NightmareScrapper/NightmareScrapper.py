@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 
 from NightmareScrapper.config import (ATTRIBUTE_TO_COLOR_MAPPING,
-                                      NM_JP_JSON_URL, NM_JSON_URL,
-                                      NM_SKILLS_JSON_URL)
+                                      JP_JSON_URL, JSON_URL,
+                                      SKILLS_JSON_URL)
 
 
 class NightmareScrapper:
@@ -56,19 +56,19 @@ class NightmareScrapper:
     @staticmethod
     def _get_nm_dataframe():
         def get_jp_nm_data():
-            nm_jp_data = pd.read_json(NM_JP_JSON_URL)
+            nm_jp_data = pd.read_json(JP_JSON_URL)
             nm_jp_data = nm_jp_data[nm_jp_data["cardType"] == 3]
             nm_jp_data = nm_jp_data[nm_jp_data.groupby('cardUniqueId').evolutionLevel.transform(max) == nm_jp_data.evolutionLevel]
             return nm_jp_data
 
         def get_nm_data():
-            nm_data = pd.read_json(NM_JSON_URL)
+            nm_data = pd.read_json(JSON_URL)
             nm_data = nm_data[nm_data["cardType"] == 3]
             nm_data = nm_data[nm_data.groupby('cardUniqueId').evolutionLevel.transform(max) == nm_data.evolutionLevel]
             return nm_data
 
         def get_nm_skills_data():
-            return pd.read_json(NM_SKILLS_JSON_URL)
+            return pd.read_json(SKILLS_JSON_URL)
 
         with ThreadPoolExecutor(3) as workers:
             nm_data_future = workers.submit(get_nm_data)
