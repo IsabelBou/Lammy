@@ -414,7 +414,7 @@ class Lammy:
                 member_role = u.get_user_from_username(" ".join(args[1:]), ctx, strict=False) or u.getRole(
                     ctx.guild.roles, " ".join(args[1:]))
                 guild_data.member_roles.remove(member_role)
-                return await ctx.send(f"Role {member_role.name} removed from admins!")
+                return await ctx.send(f"Role {member_role.name} removed from members!")
             member_role = u.get_user_from_username(" ".join(args), ctx, strict=False) or u.getRole(ctx.guild.roles, " ".join(args))
             guild_data.member_roles.add(member_role)
             return await ctx.send(f"{member_role.name} added to members!")
