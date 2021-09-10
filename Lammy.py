@@ -411,7 +411,7 @@ class Lammy:
             if len(args) == 0:
                 return await ctx.send("Please provide 1 or more arguments for this command!")
             if args[0] in ("-r", "remove"):
-                member_role = u.get_user_from_username(" ".join(args[1:]), strict=False) or u.getRole(ctx.guild.roles, " ".join(args[1:]))
+                member_role = u.get_user_from_username(" ".join(args[1:]),ctx, strict=False) or u.getRole(ctx.guild.roles, " ".join(args[1:]))
                 guild_data.member_roles.remove(member_role)
                 return await ctx.send(f"Role {member_role.name} removed from admins!")
             member_role = u.get_user_from_username(" ".join(args), ctx, strict=False) or u.getRole(ctx.guild.roles, " ".join(args))
