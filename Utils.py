@@ -20,6 +20,13 @@ def user_is_permitted(author, roles):
     )
 
 
+def role_from_id(guild, search_role):
+    for role in guild.roles:
+        if role.mention == search_role:
+            return role
+    return None if isinstance(search_role, str) else search_role
+
+
 def get_user_from_username(username: str, ctx, strict=True):
     lowered = username.lower()
     for member in ctx.guild.members:

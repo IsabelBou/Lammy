@@ -1,10 +1,8 @@
 from datetime import date, datetime, time, timedelta, timezone
 from enum import Enum
-from typing import Dict, List, Tuple
+from typing import Tuple
 
 from discord import Intents
-
-from config.dataclasses import AssignmentData, NightmareData, User
 
 # The next var defines whether or not the messages have to be printed on the bash.
 # In production it must to be set to False
@@ -15,8 +13,6 @@ CASE_INSENSITIVE = True
 
 DISCORD_INTENT = Intents.all()
 
-GUILD_NAME = "Kyobo"
-GUILD_ROLE_NAME = GUILD_NAME
 VANGUARD_ROLE_NAME = "Vanguard"
 REARGUARD_ROLE_NAME = "Rearguard"
 
