@@ -386,7 +386,7 @@ class Lammy:
         async def set_admin(ctx: Context, *args):
             _, guild_data = self.guild_from_ctx(ctx)
             if len(args) == 0:
-                return await ctx.send("Please provide 1 or more arguments for this command!")
+                return await ctx.send(f"Current admin roles: {', '.join(role.name for role in guild_data.admin_roles)}!")
             if len(guild_data.admin_roles) and not u.user_is_permitted(ctx.author, guild_data.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             if args[0] in ("-r", "remove"):
@@ -409,9 +409,10 @@ class Lammy:
         async def set_members(ctx: Context, *args):
             _, guild_data = self.guild_from_ctx(ctx)
             if len(args) == 0:
-                return await ctx.send("Please provide 1 or more arguments for this command!")
+                return await ctx.send(f"Current member roles: {', '.join(role.name for role in guild_data.member_roles)}!")
             if args[0] in ("-r", "remove"):
-                member_role = u.get_user_from_username(" ".join(args[1:]),ctx, strict=False) or u.getRole(ctx.guild.roles, " ".join(args[1:]))
+                member_role = u.get_user_from_username(" ".join(args[1:]), ctx, strict=False) or u.getRole(
+                    ctx.guild.roles, " ".join(args[1:]))
                 guild_data.member_roles.remove(member_role)
                 return await ctx.send(f"Role {member_role.name} removed from admins!")
             member_role = u.get_user_from_username(" ".join(args), ctx, strict=False) or u.getRole(ctx.guild.roles, " ".join(args))
