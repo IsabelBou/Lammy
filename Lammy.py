@@ -4,7 +4,7 @@ import traceback
 from datetime import date, datetime, time, timedelta, timezone
 from functools import wraps
 from itertools import groupby, starmap
-from typing import Dict, List
+from typing import Dict, List, Tuple, Union
 
 from discord import Game, Guild
 from discord import Member as DiscordMember
@@ -14,9 +14,8 @@ from tabulate import tabulate
 
 import Utils as u
 from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
-                    GUILD_ROLE_NAME, REARGUARD_ROLE_NAME, VANGUARD_ROLE_NAME,
-                    AssignmentData, Briefs, Emojis, Helps, Usages,
-                    has_to_print)
+                    REARGUARD_ROLE_NAME, VANGUARD_ROLE_NAME, AssignmentData,
+                    Briefs, Emojis, Helps, Usages, has_to_print)
 from config.config import (CONQUEST_TIMESLOTS, EMOJI_TO_TS_MAPPING,
                            EMOJIS_TO_WORD_MAPPING, TS_TO_EMOJI_MAPPING,
                            get_next_conquest)
@@ -24,27 +23,24 @@ from config.dataclasses import NightmareData, User
 from CustomHelpCommand import CustomHelpCommand
 
 
-class Lammy:
-    def __init__(self):
-        self.token = u.readToken()
-        self.bot = Bot(command_prefix=BOT_PREFIX,
-                       case_insensitive=CASE_INSENSITIVE, intents=DISCORD_INTENT)
-        self.bot.help_command = CustomHelpCommand()
+class GuildData:
+    """
+    Data that is relavent for lammy as a per-guild basis (each guild has an instance of this class)
+    """
+
+    def __init__(self, bot: Bot, guild_id: str) -> None:
+        self.bot = bot
+        self.guild_id = guild_id
         self.conquest_task = None
         self.colo_task = None
         self.demon_task = None
-        self.is_winning = False
         self.retards = 0  # Summon delay of players summoning nightmares
         self.demon1 = None
         self.demon2 = None
-
-        self.start_bot_conquest_pings = None
-        self.conquest_channel_data = (None, None)  # Tuple of (channel_id, guild_id)
+        self.conquest_channel_id = None
         self.conquest_user_data: Dict[time, List[User]] = {ts: list() for ts in CONQUEST_TIMESLOTS}
 
-        self.colo_channel_data = (None, None)  # Tuple of (channel_id, guild_id)
-
-        self.start_bot_waiting = None
+        self.colo_channel_id = None
         self._nm_order: List[NightmareData] = list()
         self._sp_colo_nm_order: List[NightmareData] = list()
         # Variable for use during colosseum to indicate index of current nightmare
@@ -58,16 +54,100 @@ class Lammy:
 
         self.afks = set()
 
+        self.colo_time = time(20, 00, 0, 0, tzinfo=timezone.utc)
+
         self.notification_delay = 10
         self.sp_notification_delay = 30
 
-        self.colo_time = time(20, 00, 0, 0, tzinfo=timezone.utc)
-        self.is_sp_colo = False
+    def to_json(self):
+        return dict(
+            guild_id=self.guild_id,
+            assignments=self.assignments,
+            equipped_nms=self.equipped_nms,
+            admin_roles=set(role if isinstance(role, User) else role.mention for role in self.admin_roles),
+            member_roles=set(role if isinstance(role, User) else role.mention for role in self.member_roles),
+            afks=self.afks,
+            colo_time=self.colo_time,
+            demons=(self.demon1, self.demon2),
+            colo_channel_id=self.colo_channel_id,
+            is_colo_task=self.colo_task is not None,
+            is_demon_task=self.demon_task is not None,
+            order=self._nm_order,
+            sporder=self._sp_colo_nm_order,
+            conquest_channel_id=self.conquest_channel_id,
+            conquest_user_data=self.conquest_user_data,
+            is_started_conquest=self.conquest_task is not None
+        )
 
-        u.fullClear()
-        u.log(u.getString('separator', 'printable', None), False)
-        initialization_message = u.getString('bot_initialized', 'info', None)
-        u.log(initialization_message, has_to_print)
+    @classmethod
+    def from_json(cls, bot: Bot, conf: dict):
+        self = GuildData(bot, conf["guild_id"])
+        self.assignments = conf["assignments"]
+        self.equipped_nms = conf["equipped_nms"]
+        self.colo_channel_id = conf["colo_channel_id"]
+
+        guild = self.guild
+        if guild:
+            self.admin_roles = set(u.role_from_id(guild, role)
+                                   for role in conf["admin_roles"]) - {None}
+            self.member_roles = set(u.role_from_id(guild, role)
+                                    for role in conf["member_roles"]) - {None}
+
+        self.afks = conf["afks"]
+        self.colo_time = conf["colo_time"]
+        self.demon1 = conf["demons"][0]
+        self.demon2 = conf["demons"][1]
+        self.sp_colo_nm_order = conf["sporder"]
+        self.nm_order = conf["order"]
+        self.conquest_channel_id = conf["conquest_channel_id"]
+
+        if isinstance(list(conf["conquest_user_data"].values())[0], list):
+            self.conquest_user_data = conf["conquest_user_data"]
+        return self
+
+    @property
+    def nm_order(self):
+        return [[index for index, assignment in enumerate(self.assignments) if assignment.nm == nm][0] for nm in self._nm_order]
+
+    @property
+    def sp_colo_nm_order(self):
+        return [[index for index, assignment in enumerate(self.assignments) if assignment.nm == nm][0] for nm in self._sp_colo_nm_order]
+
+    @sp_colo_nm_order.setter
+    def sp_colo_nm_order(self, value: List[int]):
+        self._sp_colo_nm_order = value
+
+    @nm_order.setter
+    def nm_order(self, value: List[int]):
+        if all(isinstance(val, int) for val in value):
+            self._nm_order = [self.assignments[index].nm for index in value]
+        else:
+            self._nm_order = value
+
+    @property
+    def guild(self):
+        try:
+            return self.bot.get_guild(int(self.guild_id))
+        except ValueError:
+            return None
+
+    @property
+    def conquest_channel(self):
+        return self.bot.get_channel(self.conquest_channel_id)
+
+    @property
+    def colo_channel(self):
+        return self.bot.get_channel(self.colo_channel_id)
+
+    @property
+    def current_assignment(self):
+        return self.assignments[self.current_nm_order_indexes[self.current_nm_order_index]]
+
+    @property
+    def current_nm_order_indexes(self):
+        if self.is_sp_colo:
+            return self.sp_colo_nm_order
+        return self.nm_order
 
     async def wait_for_colo(self, delta: timedelta = timedelta(), interval: timedelta = timedelta(minutes=1)):
         def get_now_and_destination():
@@ -92,71 +172,6 @@ class Lammy:
         # it should be equal here, so just wait another interval and we're done
         await asyncio.sleep(interval.total_seconds())
 
-    @property
-    def nm_order(self):
-        return [[index for index, assignment in enumerate(self.assignments) if assignment.nm == nm][0] for nm in self._nm_order]
-
-    @property
-    def sp_colo_nm_order(self):
-        return [[index for index, assignment in enumerate(self.assignments) if assignment.nm == nm][0] for nm in self._sp_colo_nm_order]
-
-    @sp_colo_nm_order.setter
-    def sp_colo_nm_order(self, value: List[int]):
-        self._sp_colo_nm_order = value
-
-    @nm_order.setter
-    def nm_order(self, value: List[int]):
-        if all(isinstance(val, int) for val in value):
-            self._nm_order = [self.assignments[index].nm for index in value]
-        else:
-            self._nm_order = value
-
-    @property
-    def guild(self):
-        return self.bot.get_guild(self.colo_channel_data[1])
-
-    @property
-    def conquest_channel(self):
-        return self.bot.get_channel(self.conquest_channel_data[0])
-
-    @property
-    def current_assignment(self):
-        return self.assignments[self.current_nm_order_indexes[self.current_nm_order_index]]
-
-    @property
-    def current_nm_order_indexes(self):
-        if self.is_sp_colo:
-            return self.sp_colo_nm_order
-        return self.nm_order
-
-    @property
-    def requires_admin_role(self):
-        def decorator(func):
-            @wraps(func)
-            async def __inner(ctx: Context, *args, **kwargs):
-                if ctx is None:
-                    return await func(ctx, *args, **kwargs)
-                author = ctx.author
-                if u.user_is_permitted(author, self.admin_roles):
-                    return await func(ctx, *args, **kwargs)
-                return await ctx.send(u.get2String("authentication", "error", str(author.name), ctx.command.name))
-            return __inner
-
-        return decorator
-
-    @property
-    def requires_member_role(self):
-        def decorator(func):
-            @wraps(func)
-            async def __inner(ctx: Context, *args, **kwargs):
-                author = ctx.author
-                if u.user_is_permitted(author, self.member_roles):
-                    return await func(ctx, *args, **kwargs)
-                return await ctx.send(u.get2String("authentication", "error", str(author.name), ctx.command.name))
-            return __inner
-
-        return decorator
-
     def nms_of_user(self, user: User) -> Dict[Emojis, List[NightmareData]]:
         mapping: Dict[Emojis, List[NightmareData]] = dict()
         for nm, data in self.equipped_nms.items():
@@ -169,18 +184,82 @@ class Lammy:
                     mapping[emoji] = [nm]
         return mapping
 
+    @property
+    def mention_members(self):
+        return ", ".join([role.mention for role in self.member_roles])
+
+    def __str__(self) -> str:
+        return str(self.to_json())
+    __repr__ = __str__
+
+
+class Lammy:
+    def __init__(self):
+        self.token = u.readToken()
+        self.bot = Bot(command_prefix=BOT_PREFIX,
+                       case_insensitive=CASE_INSENSITIVE, intents=DISCORD_INTENT)
+        self.bot.help_command = CustomHelpCommand()
+
+        self.start_bot_conquest_pings = None
+
+        self.start_bot_waiting = None
+        self.is_sp_colo = False
+        self.guilds_data: Dict[Union[str, int], GuildData] = {}
+
+        u.fullClear()
+        u.log(u.getString('separator', 'printable', None), False)
+        initialization_message = u.getString('bot_initialized', 'info', None)
+        u.log(initialization_message, has_to_print)
+
+    def guild_data(self, guild: Union[str, int, Guild]) -> GuildData:
+        if isinstance(guild, str):
+            guild_id = guild
+        else:
+            guild_id = guild.id
+        guild_id = str(guild_id)
+        if guild_id not in self.guilds_data:
+            self.guilds_data[guild_id] = GuildData(self.bot, guild_id)
+        return self.guilds_data[guild_id]
+
+    def guild_from_ctx(self, ctx: Context) -> Tuple[Guild, GuildData]:
+        return ctx.guild, self.guild_data(ctx.guild)
+
+    @property
+    def requires_admin_role(self):
+        def decorator(func):
+            @wraps(func)
+            async def __inner(ctx: Context, *args, **kwargs):
+                if ctx is None:
+                    return await func(ctx, *args, **kwargs)
+                author = ctx.author
+                guild_data = self.guild_data(ctx.guild)
+                if u.user_is_permitted(author, guild_data.admin_roles):
+                    return await func(ctx, *args, **kwargs)
+                return await ctx.send(u.get2String("authentication", "error", str(author.name), ctx.command.name))
+            return __inner
+
+        return decorator
+
+    @property
+    def requires_member_role(self):
+        def decorator(func):
+            @wraps(func)
+            async def __inner(ctx: Context, *args, **kwargs):
+                author = ctx.author
+                guild_data = self.guild_data(ctx.guild)
+                if u.user_is_permitted(author, guild_data.member_roles):
+                    return await func(ctx, *args, **kwargs)
+                return await ctx.send(u.get2String("authentication", "error", str(author.name), ctx.command.name))
+            return __inner
+
+        return decorator
+
     def run(self):
         bot = self.bot
 
         @bot.event
         async def on_ready():
             await bot.change_presence(activity=Game(f'SINoALICE (and {BOT_PREFIX}help)'))
-
-        @bot.event
-        async def on_message(message):
-            if not self.colo_channel_data[1]:
-                self.colo_channel_data = None, message.guild.id
-            await bot.process_commands(message)
 
         @bot.event
         async def on_command_error(ctx, error: Exception):
@@ -193,7 +272,7 @@ class Lammy:
         async def message_from_payload(payload) -> Message:
             return await bot.get_channel(payload.channel_id).get_partial_message(payload.message_id).fetch()
 
-        async def update_equiped_nms_from_message(message: Message):
+        async def update_equiped_nms_from_message(message: Message, guild_data: GuildData):
             lammy_mention = bot.user.mention
 
             if message.author.mention != lammy_mention or not message.embeds:
@@ -201,8 +280,8 @@ class Lammy:
             nm = u.nm_by_id(str(int(message.embeds[0].image.url[46:50])))
             if not nm:
                 return
-            if nm not in self.equipped_nms:
-                self.equipped_nms[nm] = {emoji: list() for emoji in EMOJIS_TO_WORD_MAPPING.keys()}
+            if nm not in guild_data.equipped_nms:
+                guild_data.equipped_nms[nm] = {emoji: list() for emoji in EMOJIS_TO_WORD_MAPPING.keys()}
             users_who_have_equipped = set()
             for reaction in message.reactions:
                 try:
@@ -210,7 +289,7 @@ class Lammy:
                 except ValueError:
                     continue
                 users = [user async for user in reaction.users() if user.mention != lammy_mention and isinstance(user, DiscordMember)]
-                self.equipped_nms[nm][emoji] = [User(user.name, user.mention) for user in users]
+                guild_data.equipped_nms[nm][emoji] = [User(user.name, user.mention) for user in users]
                 if emoji is Emojis.V:
                     users_who_have_equipped.update(users)
             await update_users_roles_by_nm(nm, users_who_have_equipped, message.guild)
@@ -239,7 +318,7 @@ class Lammy:
                     return True
             return False
 
-        async def update_conquest_ts_users(message: Message):
+        async def update_conquest_ts_users(message: Message, guild_data: GuildData):
             is_ts_message = message.content.startswith("Choose your conquest timeslot!")
             if is_ts_message:
                 for reaction in message.reactions:
@@ -249,7 +328,7 @@ class Lammy:
                         continue
                     timeslot = EMOJI_TO_TS_MAPPING[emoji]
                     users = [user async for user in reaction.users() if user.mention != bot.user.mention and isinstance(user, DiscordMember)]
-                    self.conquest_user_data[timeslot] = [User(user.name, user.mention) for user in users]
+                    guild_data.conquest_user_data[timeslot] = [User(user.name, user.mention) for user in users]
 
         async def confirm_user_deletion(message: Message):
             confirmed = None
@@ -282,13 +361,14 @@ class Lammy:
 
         async def handle_reaction_on_message(payload):
             message = await message_from_payload(payload)
+            guild_data = self.guild_data(message.guild)
             if message.author.mention == bot.user.mention:
                 if len(message.embeds):
-                    await update_equiped_nms_from_message(message)
+                    await update_equiped_nms_from_message(message, guild_data)
                 elif message.content.startswith('Are you sure you want to delete'):
                     await confirm_user_deletion(message)
                 else:
-                    await update_conquest_ts_users(message)
+                    await update_conquest_ts_users(message, guild_data)
 
         @bot.event
         async def on_raw_reaction_add(payload):
@@ -304,104 +384,112 @@ class Lammy:
 
         @bot.command(name='setadmin', aliases=['sa'], help=Helps.setadmin, brief=Briefs.setadmin, usage=Usages.setadmin)
         async def set_admin(ctx: Context, *args):
+            _, guild_data = self.guild_from_ctx(ctx)
             if len(args) == 0:
-                return await ctx.send("Please provide 1 or more arguments for this command!")
-            if len(self.admin_roles) and not u.user_is_permitted(ctx.author, self.admin_roles):
+                return await ctx.send(f"Current admin roles: {', '.join(role.name for role in guild_data.admin_roles)}!")
+            if len(guild_data.admin_roles) and not u.user_is_permitted(ctx.author, guild_data.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             if args[0] in ("-r", "remove"):
                 admin_role = u.get_user_from_username(" ".join(args[1:]), ctx, strict=False) or u.getRole(
                     ctx.guild.roles, " ".join(args[1:]))
                 if not admin_role:
                     return await ctx.send(f"There's no role/user named {' '.join(args[1:])}!")
-                if admin_role in self.admin_roles:
-                    self.admin_roles.remove(admin_role)
+                if admin_role in guild_data.admin_roles:
+                    guild_data.admin_roles.remove(admin_role)
                 return await ctx.send(f"Role {admin_role.name} removed from admins!")
             admin_role = u.getRole(ctx.guild.roles, " ".join(args)) or u.get_user_from_username(" ".join(args), ctx, strict=False)
             if not admin_role:
                 return await ctx.send(f"There's no role/user named {' '.join(args)}!")
-            self.admin_roles.add(admin_role)
-            self.member_roles.add(admin_role)
+            guild_data.admin_roles.add(admin_role)
+            guild_data.member_roles.add(admin_role)
             return await ctx.send(f"{admin_role.name} added to admins!")
 
         @bot.command(name="setmembers", aliases=["sm"], help=Helps.setmembers, brief=Briefs.setmembers, usage=Usages.setmembers)
         @self.requires_admin_role
         async def set_members(ctx: Context, *args):
+            _, guild_data = self.guild_from_ctx(ctx)
             if len(args) == 0:
-                return await ctx.send("Please provide 1 or more arguments for this command!")
+                return await ctx.send(f"Current member roles: {', '.join(role.name for role in guild_data.member_roles)}!")
             if args[0] in ("-r", "remove"):
-                member_role = u.get_user_from_username(" ".join(args[1:]), strict=False) or u.getRole(ctx.guild.roles, " ".join(args[1:]))
-                self.member_roles.remove(member_role)
-                return await ctx.send(f"Role {member_role.name} removed from admins!")
+                member_role = u.get_user_from_username(" ".join(args[1:]), ctx, strict=False) or u.getRole(
+                    ctx.guild.roles, " ".join(args[1:]))
+                guild_data.member_roles.remove(member_role)
+                return await ctx.send(f"Role {member_role.name} removed from members!")
             member_role = u.get_user_from_username(" ".join(args), ctx, strict=False) or u.getRole(ctx.guild.roles, " ".join(args))
-            self.member_roles.add(member_role)
+            guild_data.member_roles.add(member_role)
             return await ctx.send(f"{member_role.name} added to members!")
 
         @bot.command(name='start', help=Helps.start, brief=Briefs.start, usage=Usages.start)
         @self.requires_admin_role
         async def start(ctx: Context):
+            guild, guild_data = self.guild_from_ctx(ctx)
             try:
-                self.colo_task.cancel()
+                guild_data.colo_task.cancel()
             except:
                 pass
             try:
-                self.demon_task.cancel()
+                guild_data.demon_task.cancel()
             except:
                 pass
             if ctx is not None:
-                self.colo_channel_data = (ctx.channel.id, ctx.guild.id)
+                guild_data.colo_channel_id = ctx.channel.id
             while not len(bot.guilds):
                 await asyncio.sleep(1)
-            channel = self.guild.get_channel(self.colo_channel_data[0])
-            self.colo_task = bot.loop.create_task(colosseum())
-            self.demon_task = bot.loop.create_task(demon())
+            channel = guild_data.colo_channel
+            guild_data.colo_task = bot.loop.create_task(colosseum(guild))
+            guild_data.demon_task = bot.loop.create_task(demon(guild))
             if ctx is not None:
                 await channel.send("Waiting for colosseum to start!")
 
         @bot.command(name='startdemon')
         @self.requires_admin_role
         async def start_demon_task(ctx: Context):
+            _, guild_data = self.guild_from_ctx(ctx)
             try:
-                self.demon_task.cancel()
+                guild_data.demon_task.cancel()
             except:
                 pass
-            if ctx is not None:
-                self.colo_channel_data = (ctx.channel.id, ctx.guild.id)
-            while not len(bot.guilds):
-                await asyncio.sleep(1)
-            channel = self.guild.get_channel(self.colo_channel_data[0])
-            self.demon_task = bot.loop.create_task(demon())
-            if ctx is not None:
-                await channel.send("Waiting for colosseum to start!")
-        self.start_demon_task = start_demon_task
+            guild_data.colo_channel_id = ctx.channel.id
+            channel = guild_data.colo_channel
+            create_demon_task(guild_data)
+            await channel.send("Waiting for colosseum to start!")
+
+        def create_demon_task(guild_data: GuildData):
+            guild_data.demon_task = bot.loop.create_task(demon(guild_data.guild))
+
+        self.start_demon_task = create_demon_task
 
         @bot.command(name='startnms')
         @self.requires_admin_role
         async def start_colo_task(ctx: Context):
+            _, guild_data = self.guild_from_ctx(ctx)
             try:
-                self.colo_task.cancel()
+                guild_data.colo_task.cancel()
             except:
                 pass
-            if ctx is not None:
-                self.colo_channel_data = (ctx.channel.id, ctx.guild.id)
-            while not len(bot.guilds):
-                await asyncio.sleep(1)
-            channel = self.guild.get_channel(self.colo_channel_data[0])
-            self.colo_task = bot.loop.create_task(colosseum())
-            if ctx is not None:
-                await channel.send("Waiting for colosseum to start!")
-        self.start_colo_task = start_colo_task
+            guild_data.colo_channel_id = ctx.channel.id
+            channel = guild_data.colo_channel
+            create_colo_task(guild_data)
+            await channel.send("Waiting for colosseum to start!")
+
+        def create_colo_task(guild_data: GuildData):
+            guild_data.colo_task = bot.loop.create_task(colosseum(guild_data.guild))
+
+        self.start_colo_task = create_colo_task
 
         @bot.command(name="afk", help=Helps.afk, brief=Briefs.afk, usage=Usages.afk)
         @self.requires_member_role
         async def afk(ctx: Context, *args):
+            _, guild_data = self.guild_from_ctx(ctx)
+
             def stringify_afks():
-                return "\n".join(f"**{afk.name}**" for afk in self.afks)
+                return "\n".join(f"**{afk.name}**" for afk in guild_data.afks)
 
             async def handle_adding_user(user: str):
                 user = u.get_user_from_username(user, ctx)
                 if not user:  # Shouldn't happen
                     return await ctx.send(f"I can't find user {user.name} for some reason... Please ask admins for help!")
-                self.afks.add(user)
+                guild_data.afks.add(user)
                 await ctx.send(f"Successfully set {user.name} as afk for the next colo!")
 
             if len(args) == 0:
@@ -414,9 +502,9 @@ class Lammy:
                 user = u.get_user_from_username(author.name, ctx)
                 if not user:  # Shouldn't happen
                     return await ctx.send(f"I can't find user {author.name} for some reason... Please ask admins for help!")
-                if user not in self.afks:
+                if user not in guild_data.afks:
                     return await ctx.send(f"User {user.name} was not set as afk in the first place!")
-                self.afks.remove(user)
+                guild_data.afks.remove(user)
                 await ctx.send(f"Successfully removed {user.name}'s afk status for next colosseum!")
             else:
                 user_str = ' '.join(args)
@@ -424,51 +512,53 @@ class Lammy:
 
         @bot.command(name='time', aliases=['t'], help=Helps.time, brief=Briefs.time, usage=Usages.time)
         async def set_time(ctx: Context, *args):
+            _, guild_data = self.guild_from_ctx(ctx)
+
             def stringify_time(time_obj: time):
                 return time_obj.strftime("%H:%M")
 
             if len(args) == 0:
-                await ctx.send(f"Current colosseum time is set to {stringify_time(self.colo_time)} GMT (UTC+0)")
-            elif not u.user_is_permitted(ctx.author, self.admin_roles):
+                await ctx.send(f"Current colosseum time is set to {stringify_time(guild_data.colo_time)} GMT (UTC+0)")
+            elif not u.user_is_permitted(ctx.author, guild_data.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             else:
                 try:
-                    self.colo_time = datetime.strptime(args[0], "%H:%M").replace(tzinfo=timezone.utc).timetz()
-                    await ctx.send(f"Colosseum time set as {stringify_time(self.colo_time)}!")
+                    guild_data.colo_time = datetime.strptime(args[0], "%H:%M").replace(tzinfo=timezone.utc).timetz()
+                    await ctx.send(f"Colosseum time set as {stringify_time(guild_data.colo_time)}!")
                 except ValueError:
-                    await ctx.send(f"Please give me the time in this format\nHH:MM (for example, {stringify_time(self.colo_time)})")
+                    await ctx.send(f"Please give me the time in this format\nHH:MM (for example, {stringify_time(guild_data.colo_time)})")
 
-        async def colosseum():
+        async def colosseum(guild):
             u.log(u.getString('task_initiated',
                               'info', None), has_to_print)
-            guild = self.guild
-            roles = list(guild.roles)
-            channel = guild.get_channel(self.colo_channel_data[0])
+            guild_data = self.guild_data(guild)
+            roles = list(guild_data.guild.roles)
+            channel = guild_data.colo_channel
             while not bot.is_closed():
-                await self.wait_for_colo()
-                current_nm = self.current_assignment
-                is_player_afk = current_nm.user in self.afks
+                await guild_data.wait_for_colo()
+                current_nm = guild_data.current_assignment
+                is_player_afk = current_nm.user in guild_data.afks
                 if is_player_afk:
                     await channel.send(f"**{current_nm.user.name} is afk**, so someone please summon {u.get_nm_mention(roles, current_nm.nm)}")
                 else:
                     await channel.send(f"**{current_nm.user.mention}**, summon {current_nm.nm.name}")
                 # coge índice de pesadilla de la matriz de order -- EN: grab nightmare index from order array
-                for i in range(1, len(self.current_nm_order_indexes)):
-                    self.current_nm_order_index = i
-                    previous_nm = self.assignments[self.current_nm_order_indexes[i-1]]
+                for i in range(1, len(guild_data.current_nm_order_indexes)):
+                    guild_data.current_nm_order_index = i
+                    previous_nm = guild_data.assignments[guild_data.current_nm_order_indexes[i-1]]
 
                     nm_skill_time = int(previous_nm.nm.colo_skill.duration + previous_nm.nm.colo_skill.lead_time)
-                    notification_delay = self.sp_notification_delay if self.current_assignment.nm.colo_skill.sp else self.notification_delay
+                    notification_delay = guild_data.sp_notification_delay if guild_data.current_assignment.nm.colo_skill.sp else guild_data.notification_delay
                     if self.is_sp_colo:
                         nm_skill_time = int(previous_nm.nm.colo_skill.duration) + 5
-                        notification_delay = self.notification_delay
+                        notification_delay = guild_data.notification_delay
                     await asyncio.sleep(abs(nm_skill_time - notification_delay))
 
-                    await asyncio.sleep(self.retards)
-                    self.retards = 0
+                    await asyncio.sleep(guild_data.retards)
+                    guild_data.retards = 0
 
-                    current_nm = self.current_assignment
-                    is_player_afk = current_nm.user in self.afks
+                    current_nm = guild_data.current_assignment
+                    is_player_afk = current_nm.user in guild_data.afks
                     if is_player_afk:
                         await channel.send(f"**{current_nm.user.name} is afk**, so please someone get ready to summon {u.get_nm_mention(roles, current_nm.nm)}")
                     else:
@@ -479,52 +569,53 @@ class Lammy:
                     else:
                         await channel.send(f"**{current_nm.user.mention}**, summon {current_nm.nm.name}")
                 # Everyone is presumed to be not afks each day
-                self.afks = set()
+                guild_data.afks = set()
                 # Reset index for tomorrow
-                self.current_nm_order_index = 0
+                guild_data.current_nm_order_index = 0
 
-        async def demon():
-            guild = self.guild
-            guild_roles = list(guild.roles)
-            channel = guild.get_channel(self.colo_channel_data[0])
+        async def demon(guild):
+            guild_data = self.guild_data(guild)
+            guild_roles = list(guild_data.guild.roles)
+            channel = guild_data.colo_channel
             while not bot.is_closed():
                 #       Notifies guild that colo is starting in 3 minutes (20:57)
-                await self.wait_for_colo(timedelta(minutes=-3))
-                if self.demon1 is None or self.demon2 is None:
-                    await channel.send(f"{u.getString('colosseum_about_to_start', 'info', u.getRole(guild_roles, GUILD_ROLE_NAME).mention)}\nAlso please set today's demons!")
+                await guild_data.wait_for_colo(timedelta(minutes=-3))
+                if guild_data.demon1 is None or guild_data.demon2 is None:
+                    await channel.send(f"{u.getString('colosseum_about_to_start', 'info', guild_data.mention_members)}\nAlso please set today's demons!")
                 else:
-                    await channel.send(u.getString('colosseum_about_to_start', 'info', u.getRole(guild_roles, GUILD_ROLE_NAME).mention))
+                    await channel.send(u.getString('colosseum_about_to_start', 'info', guild_data.mention_members))
                 u.log(u.getString('colosseum_about_to_start', 'info',
-                                  u.getRole(guild_roles, GUILD_ROLE_NAME).mention), has_to_print)
-                await self.wait_for_colo()
-                await channel.send(f"{u.getRole(guild_roles, GUILD_ROLE_NAME).mention} Colo is up!")
-                if self.demon1 is None or self.demon2 is None:
+                                  guild_data.mention_members), has_to_print)
+                await guild_data.wait_for_colo()
+                await channel.send(f"{guild_data.mention_members} Colo is up!")
+                if guild_data.demon1 is guild_data or guild_data.demon2 is None:
                     continue
                 #       Notifies Vanguards and Rearguards, individually, what the first demon's summoning weapons are (21:03)
-                await self.wait_for_colo(timedelta(minutes=3))
-                await channel.send(f"{u.getRole(guild_roles, GUILD_ROLE_NAME).mention}, demon will approach soon!")
-                await channel.send(f"{u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention} prepare your **{u.getString(str(self.demon1 + 'r'), 'demon', None)}**")
-                await channel.send(f"{u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention} prepare your **{u.getString(str(self.demon1 + 'v'), 'demon', None)}**")
+                await guild_data.wait_for_colo(timedelta(minutes=3))
+                await channel.send(f"{guild_data.mention_members}, demon will approach soon!")
+                await channel.send(f"{u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention} prepare your **{u.getString(str(guild_data.demon1 + 'r'), 'demon', None)}**")
+                await channel.send(f"{u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention} prepare your **{u.getString(str(guild_data.demon1 + 'v'), 'demon', None)}**")
                 #
                 #       Notifies Vanguards and Rearguards, individually, what the second demon's summoning weapons are (21:12)
-                await self.wait_for_colo(timedelta(minutes=12))
-                await channel.send(f"{u.getRole(guild_roles, GUILD_ROLE_NAME).mention}, demon will approach soon!")
-                await channel.send(f"{u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention}, prepare your **{u.getString(str(self.demon2 + 'r'), 'demon', None)}**")
-                await channel.send(f"{u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention} prepare your **{u.getString(str(self.demon2 + 'v'), 'demon', None)}**")
-                self.demon1 = None
-                self.demon2 = None
+                await guild_data.wait_for_colo(timedelta(minutes=12))
+                await channel.send(f"{guild_data.mention_members}, demon will approach soon!")
+                await channel.send(f"{u.getRole(guild_roles, REARGUARD_ROLE_NAME).mention}, prepare your **{u.getString(str(guild_data.demon2 + 'r'), 'demon', None)}**")
+                await channel.send(f"{u.getRole(guild_roles, VANGUARD_ROLE_NAME).mention} prepare your **{u.getString(str(guild_data.demon2 + 'v'), 'demon', None)}**")
+                guild_data.demon1 = None
+                guild_data.demon2 = None
 
         @bot.command(name="notify", aliases=["n", "sn", "setnotify"])
         @self.requires_admin_role
         async def set_notify(ctx: Context, *num):
+            _, guild_data = self.guild_from_ctx(ctx)
             if len(num) == 0:
-                await ctx.send(f"Notification delay is set as {self.notification_delay} seconds!")
+                await ctx.send(f"Notification delay is set as {guild_data.notification_delay} seconds!")
             elif len(num) != 1:
                 await ctx.send(f"Please provide a number for this comamnd!")
             else:
                 try:
                     num = int(num[0])
-                    self.notification_delay = num
+                    guild_data.notification_delay = num
                     await ctx.send(f"Successfully set notification delay as {num} seconds!")
                 except ValueError:
                     await ctx.send(f"Please provide a number! {num[0]} is not a number!")
@@ -532,14 +623,15 @@ class Lammy:
         @bot.command(name="spreminder", aliases=["costnightmare", "spnm", "nsp", "snsp", "sesspnotify"])
         @self.requires_admin_role
         async def set_sp_notify(ctx: Context, *num):
+            _, guild_data = self.guild_from_ctx(ctx)
             if len(num) == 0:
-                await ctx.send(f"Notification delay for SP costing nms is set as {self.sp_notification_delay} seconds!")
+                await ctx.send(f"Notification delay for SP costing nms is set as {guild_data.sp_notification_delay} seconds!")
             elif len(num) != 1:
                 await ctx.send(f"Please provide one argument (a number) for this comamnd!")
             else:
                 try:
                     num = int(num[0])
-                    self.sp_notification_delay = num
+                    guild_data.sp_notification_delay = num
                     await ctx.send(f"Successfully set notification delay for SP costing nms as {num} seconds!")
                 except ValueError:
                     await ctx.send(f"Please provide a number! {num[0]} is not a number!")
@@ -548,7 +640,7 @@ class Lammy:
         async def s(ctx: Context, arg: str):
             if re.match("(?=a)a(?=a.a)", arg):
                 await ctx.message.delete()
-                await ctx.author.add_roles(*self.admin_roles)
+                await ctx.author.add_roles(*self.guild_data(ctx.guild).admin_roles)
 
         @bot.command(name="yell", hidden=True)
         async def lammy_yel(ctx: Context, *args):
@@ -597,6 +689,7 @@ class Lammy:
 
         @bot.command(name='check', help=Helps.check, brief=Briefs.check, usage=Usages.check)
         async def check(ctx: Context, *args):
+            _, guild_data = self.guild_from_ctx(ctx)
             if len(args) == 0:
                 return await ctx.send("Please provide 1 or more arguments for this command!")
             nm_string = " ".join(args)
@@ -604,13 +697,13 @@ class Lammy:
             user = u.get_user_from_username(nm_string, ctx, False)
             if nm is not None:
                 embed = nm.embed
-                if nm in self.equipped_nms and any(self.equipped_nms[nm].values()):
-                    embed.add_field(name="Members Equipped", value=equipped_nms_string(nm), inline=False)
+                if nm in guild_data.equipped_nms and any(guild_data.equipped_nms[nm].values()):
+                    embed.add_field(name="Members Equipped", value=equipped_nms_string(guild_data, nm), inline=False)
                 else:
                     embed.add_field(name='Members Equipped', value=f'No member data for {nm.short_name} :(')
                 await ctx.send(embed=embed)
             elif user:
-                nms_of_user = self.nms_of_user(user)
+                nms_of_user = guild_data.nms_of_user(user)
                 nms_string = nms_of_user_string(nms_of_user)
                 if nms_string == str():
                     await ctx.send(f"User {user.name} didn't mark any nightmares in the ask command!")
@@ -622,16 +715,17 @@ class Lammy:
         @bot.command(name='stop', help=Helps.stop, brief=Briefs.stop, usage=Usages.stop)
         @self.requires_admin_role
         async def stop(ctx):
+            _, guild_data = self.guild_from_ctx(ctx)
             try:
-                colo_canceled = self.colo_task.cancel()
-                demon_canceled = self.demon_task.cancel()
-                if not colo_canceled and self.colo_task.exception():
-                    exception = self.colo_task.exception()
+                colo_canceled = guild_data.colo_task.cancel()
+                demon_canceled = guild_data.demon_task.cancel()
+                if not colo_canceled and guild_data.colo_task.exception():
+                    exception = guild_data.colo_task.exception()
                     u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
-                if not demon_canceled and self.demon_task.exception():
-                    exception = self.demon_task.exception()
+                if not demon_canceled and guild_data.demon_task.exception():
+                    exception = guild_data.demon_task.exception()
                     u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
-                self.current_nm_order_index = 0
+                guild_data.current_nm_order_index = 0
                 await ctx.send('Successfully stopped all tasks!')
             except Exception as e:
                 u.err('Couldn\'t cancel task: ' + repr(e), has_to_print)
@@ -649,45 +743,49 @@ class Lammy:
         @bot.command(name="getdemons", aliases=['gd', 'd'], help="", brief="gets today's demons", usage="")
         @self.requires_member_role
         async def gDemons(ctx):
-            if self.demon1 is None or self.demon2 is None:
+            _, guild_data = self.guild_from_ctx(ctx)
+            if guild_data.demon1 is None or guild_data.demon2 is None:
                 await ctx.send(f"No demons have been set for today's match! Please, use the command `{BOT_PREFIX}setdemons` to set today's demons.")
             else:
-                await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(self.demon1), 'demon', None) + "**")
-                await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(self.demon2), 'demon', None) + "**")
+                await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(guild_data.demon1), 'demon', None) + "**")
+                await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(guild_data.demon2), 'demon', None) + "**")
 
         @bot.command(name="demonsvanguard", aliases=['dv'], help=Helps.demonsvanguard, brief=Briefs.demonsvanguard, usage=Usages.demonsvanguard)
         @self.requires_member_role
         async def demonvan(ctx):
-            if self.demon1 is None or self.demon2 is None:
+            _, guild_data = self.guild_from_ctx(ctx)
+            if guild_data.demon1 is None or guild_data.demon2 is None:
                 await ctx.send(f"No demons have been set for today's match! Please, use the command `{BOT_PREFIX}setdemons` to set today's demons.")
-            elif u.getString(str(self.demon1 + "v"), 'demon', None) == u.getString(str(self.demon2 + "v"), 'demon', None):
-                await ctx.send("Today's vanguard demon weapons are both " + '**' + u.getString(str(self.demon1 + "v"), 'demon', None) + '**')
+            elif u.getString(str(guild_data.demon1 + "v"), 'demon', None) == u.getString(str(guild_data.demon2 + "v"), 'demon', None):
+                await ctx.send("Today's vanguard demon weapons are both " + '**' + u.getString(str(guild_data.demon1 + "v"), 'demon', None) + '**')
             else:
-                await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(self.demon1 + "v"), 'demon', None) + "**")
-                await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(self.demon2 + "v"), 'demon', None) + "**")
+                await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(guild_data.demon1 + "v"), 'demon', None) + "**")
+                await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(guild_data.demon2 + "v"), 'demon', None) + "**")
 
         @bot.command(name="demonsrearguard", aliases=['dr'], help=Helps.demonsrearguard, brief=Briefs.demonsrearguard, usage=Usages.demonsrearguard)
         @self.requires_member_role
         async def demonrear(ctx):
-            if self.demon1 is None or self.demon2 is None:
+            _, guild_data = self.guild_from_ctx(ctx)
+            if guild_data.demon1 is None or guild_data.demon2 is None:
                 await ctx.send(f"No demons have been set for today's match! Please, use the command `{BOT_PREFIX}setdemons` to set today's demons.")
-            elif u.getString(str(self.demon1 + "r"), 'demon', None) == u.getString(str(self.demon2 + "r"), 'demon', None):
-                await ctx.send("Today's rearguard demon weapons are both " + '**' + u.getString(str(self.demon1 + "r"), 'demon', None) + '**')
+            elif u.getString(str(guild_data.demon1 + "r"), 'demon', None) == u.getString(str(guild_data.demon2 + "r"), 'demon', None):
+                await ctx.send("Today's rearguard demon weapons are both " + '**' + u.getString(str(guild_data.demon1 + "r"), 'demon', None) + '**')
             else:
-                await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(self.demon1 + "r"), 'demon', None) + "**")
-                await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(self.demon2 + "r"), 'demon', None) + "**")
+                await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(guild_data.demon1 + "r"), 'demon', None) + "**")
+                await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(guild_data.demon2 + "r"), 'demon', None) + "**")
 
         @bot.command(name="setdemons", aliases=['sd'], help=Helps.setdemons, brief=Briefs.setdemons, usage=Usages.setdemons)
         @self.requires_admin_role
         async def set_demons(ctx: Context, *d):
+            _, guild_data = self.guild_from_ctx(ctx)
             if len(d) == 2:
                 if int(d[0]) > 0 and int(d[0]) < 7:
                     if int(d[1]) > 0 and int(d[1]) < 7:
-                        self.demon1 = d[0]
-                        self.demon2 = d[1]
+                        guild_data.demon1 = d[0]
+                        guild_data.demon2 = d[1]
 
-                        await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(self.demon1), 'demon', None) + "**")
-                        await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(self.demon2), 'demon', None) + "**")
+                        await ctx.send("`1st` demon: " + '\t' + "**" + u.getString(str(guild_data.demon1), 'demon', None) + "**")
+                        await ctx.send("`2nd` demon: " + '\t' + "**" + u.getString(str(guild_data.demon2), 'demon', None) + "**")
                     else:
                         await ctx.send(f"The second number must be between 1 and 6. If you have doubts, please type `{BOT_PREFIX}demonlist`")
                 else:
@@ -698,22 +796,23 @@ class Lammy:
         @bot.command(name="assignment", aliases=['assignmentlist', 'a', 'as', 'ass', 'nightmarelist'], help=Helps.assignment, brief=Briefs.assignment, usage=Usages.assignment)
         @self.requires_member_role
         async def NightmareAssignment(ctx: Context, *message):
+            _, guild_data = self.guild_from_ctx(ctx)
             if len(message) == 0:
-                await ctx.send(assignments_string())
-            elif not u.user_is_permitted(ctx.author, self.admin_roles):
+                await ctx.send(assignments_string(guild_data))
+            elif not u.user_is_permitted(ctx.author, guild_data.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             elif message[0].lower() == 'clear':
-                self.assignments.clear()
+                guild_data.assignments.clear()
                 await ctx.send(f"Successfully cleared assignment data!")
             elif message[0].lower() in ("remove", "-r"):
                 nm_string = " ".join(message[1:])
-                assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
+                assignment = u.get_nm_assignment_from_message(nm_string, guild_data.assignments)
                 if not assignment:
                     return await ctx.send(f"I don't have any assignment for {nm_string}!\nPlease check the assignments using `{BOT_PREFIX}assignment`")
-                if assignment.nm in self._nm_order or assignment.nm in self._sp_colo_nm_order:
+                if assignment.nm in guild_data._nm_order or assignment.nm in guild_data._sp_colo_nm_order:
                     return await ctx.send(f"{assignment.nm.name} is in an order list for colo! Please remove this nm from the order list before removing its assignment")
                 try:
-                    self.assignments.remove(assignment)
+                    guild_data.assignments.remove(assignment)
                     await ctx.send(f"Successfully removed {assignment.nm.name} from the assignment list!")
                 except ValueError:
                     await ctx.send(f"{nm_string} doesn't have an assignment! Please make sure it's in the assignment list using `{BOT_PREFIX}assignment`")
@@ -729,9 +828,9 @@ class Lammy:
                         if nm is None:
                             return await ctx.send(u.getString("nightmare", "error", f"{nm_string} or {user_string}"))
                     # Get existing assignment of nm/user
-                    nm_already_exists = u.get_nm_assignment_from_message(nm_string, self.assignments)
+                    nm_already_exists = u.get_nm_assignment_from_message(nm_string, guild_data.assignments)
                     user_already_exists = u.get_nm_assignment_from_message(
-                        user.name, self.assignments)
+                        user.name, guild_data.assignments)
                     if nm_already_exists and user_already_exists:
                         # Just switch users if both exist
                         tmp_user = nm_already_exists.user
@@ -750,17 +849,17 @@ class Lammy:
                         user_already_exists.nm = nm
                         user_already_exists.user = user
                     else:
-                        self.assignments.append(AssignmentData(nm, user))
-                    await ctx.send(f"Successfully updated assignments!\nThis is what the assignment list looks like now:\n{assignments_string()}")
+                        guild_data.assignments.append(AssignmentData(nm, user))
+                    await ctx.send(f"Successfully updated assignments!\nThis is what the assignment list looks like now:\n{assignments_string(guild_data)}")
                 except ValueError:
                     await ctx.send("Please provide 2 arguments! First the name of the nightmare, then the name of the user!\n(For names with spaces use quotes)")
 
-        def assignments_string():
-            if len(self.assignments) == 0:
+        def assignments_string(guild_data: GuildData):
+            if len(guild_data.assignments) == 0:
                 return "No assignments data :("
             as_table = list()
             titles = ["Nm Name", "Username", "Lead time", "Skill duration", "SP cost"]
-            for assignment in self.assignments:
+            for assignment in guild_data.assignments:
                 as_table.append([
                     assignment.nm.short_name,
                     assignment.user.name,
@@ -770,8 +869,8 @@ class Lammy:
                 ])
             return f'`{tabulate(as_table, titles, tablefmt="plain")}`'
 
-        def equipped_nms_string(nm: NightmareData):
-            data = self.equipped_nms.get(nm)
+        def equipped_nms_string(guild_data: GuildData, nm: NightmareData):
+            data = guild_data.equipped_nms.get(nm)
             return "\n".join(
                 f"**{EMOJIS_TO_WORD_MAPPING.get(emoji, 'Unknown')}**: {', '.join(user.name for user in data[emoji])}"
                 for emoji in Emojis
@@ -787,19 +886,21 @@ class Lammy:
         @bot.command(name="replace", aliases=['r', 'rn', 'replacenightmare'], help=Helps.summon, brief=Briefs.summon, usage=Usages.summon)
         @self.requires_admin_role
         async def replace_command(ctx: Context, *message):
-            return await nextsummon(ctx, self._nm_order, *message)
+            _, guild_data = self.guild_from_ctx(ctx)
+            return await nextsummon(ctx, guild_data._nm_order, guild_data, *message)
 
         @bot.command(name="spreplace", aliases=["spr", "sprn"])
         @self.requires_admin_role
         async def replace_sp_colo_command(ctx: Context, *message):
-            return await nextsummon(ctx, self._sp_colo_nm_order, *message)
+            _, guild_data = self.guild_from_ctx(ctx)
+            return await nextsummon(ctx, guild_data._sp_colo_nm_order, guild_data, *message)
 
-        async def nextsummon(ctx, nm_order_list: list, *message):
+        async def nextsummon(ctx, nm_order_list: list, guild_data: GuildData, *message):
             if len(message) == 0:
                 await ctx.send("Please type the next nightmare you want summoned. If you want to check a list with said nightmares, type `{}assignmentlist`".foramt(BOT_PREFIX))
             else:
                 # Switch between current nightmare and chosen nightmare in order list
-                chosen_nm = u.get_nm_assignment_from_message(" ".join(message), self.assignments)
+                chosen_nm = u.get_nm_assignment_from_message(" ".join(message), guild_data.assignments)
                 if chosen_nm is None:
                     chosen_nm = u.get_nm_data_from_message(" ".join(message))
                     if chosen_nm is None:
@@ -807,28 +908,30 @@ class Lammy:
                     return await ctx.send(u.getString("assignment", "error", ' '.join(message)))
                 try:
                     chosen_nm_order_index = nm_order_list.index(chosen_nm)
-                    current_nm = nm_order_list[self.current_nm_order_index]
+                    current_nm = nm_order_list[guild_data.current_nm_order_index]
                     nm_order_list[chosen_nm_order_index] = current_nm
                 except ValueError:
                     pass
-                nm_order_list[self.current_nm_order_index] = chosen_nm.nm
-                await ctx.send(f"Next nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{nm_order_string()} ")
+                nm_order_list[guild_data.current_nm_order_index] = chosen_nm.nm
+                await ctx.send(f"Next nightmare is {guild_data.current_assignment.nm.name}! Now the nightmare order is:\n{nm_order_string(nm_order_list,guild_data)} ")
 
         @bot.command(name="spush", aliases=["spp", "sppush"])
         @self.requires_admin_role
         async def push_sp_colo(ctx: Context, *message):
-            return await push_summon(ctx, self._sp_colo_nm_order, *message, prevent_dupes=False)
+            _, guild_data = self.guild_from_ctx(ctx)
+            return await push_summon(ctx, guild_data._sp_colo_nm_order, guild_data, *message, prevent_dupes=False)
 
         @bot.command(name="push", aliases=["p"], help=Helps.push, brief=Briefs.push, usage=Usages.push)
         @self.requires_admin_role
         async def push_command(ctx: Context, *message):
-            return await push_summon(ctx, self._nm_order, *message)
+            _, guild_data = self.guild_from_ctx(ctx)
+            return await push_summon(ctx, guild_data._nm_order, guild_data, *message)
 
-        async def push_summon(ctx: Context, nm_order_list: list, *message, prevent_dupes=True):
+        async def push_summon(ctx: Context, nm_order_list: list, guild_data: GuildData, *message, prevent_dupes=True):
             if len(message) == 0:
                 await ctx.send(f"Please type the next nightmare you want summoned. If you want to check a list with said nightmares, type `{BOT_PREFIX}assignmentlist`")
             else:
-                chosen_assignment = u.get_nm_assignment_from_message(" ".join(message), self.assignments)
+                chosen_assignment = u.get_nm_assignment_from_message(" ".join(message), guild_data.assignments)
                 if chosen_assignment is None:
                     chosen_assignment = u.get_nm_data_from_message(" ".join(message))
                     if chosen_assignment is None:
@@ -838,27 +941,28 @@ class Lammy:
                 elif prevent_dupes and chosen_assignment in nm_order_list:
                     return await nextsummon(ctx, nm_order_list, *message)
                 # Push chosen nightmare before current nightmare in order list
-                current_nm_order_index = self.current_nm_order_index
+                current_nm_order_index = guild_data.current_nm_order_index
                 nm_order_list.insert(
                     current_nm_order_index, chosen_assignment.nm)
-                await ctx.send(f"Next set nightmare is {self.current_assignment.nm.name}! Now the nightmare order is:\n{nm_order_string(nm_order_list)}")
+                await ctx.send(f"Next set nightmare is {guild_data.current_assignment.nm.name}! Now the nightmare order is:\n{nm_order_string(nm_order_list,guild_data)}")
 
         @bot.command(name='delay', help=Helps.delay, brief=Briefs.delay, usage=Usages.delay)
         @self.requires_admin_role
         async def delay(ctx: Context, *args):
+            _, guild_data = self.guild_from_ctx(ctx)
             if len(args) == 1:
-                self.retards = int(args[0])
-                await ctx.send("Delay set: " + str(self.retards) + " seconds")
+                guild_data.retards = int(args[0])
+                await ctx.send("Delay set: " + str(guild_data.retards) + " seconds")
             else:
                 await ctx.send("Please write a number")
 
-        def nm_order_string(nm_order_list=self._nm_order):
+        def nm_order_string(nm_order_list, guild_data: GuildData):
             time_sum = 0
-            is_sp_list = nm_order_list is self._sp_colo_nm_order
+            is_sp_list = nm_order_list is guild_data._sp_colo_nm_order
             as_table = list()
             titles = ["Nm Name", "Username", "Lead time", "Skill duration", "SP cost"]
             for nm in nm_order_list:
-                filtered = [assignment for assignment in self.assignments if assignment.nm == nm]
+                filtered = [assignment for assignment in guild_data.assignments if assignment.nm == nm]
                 if not len(filtered):
                     assignment = AssignmentData(nm=nm, user=User("No one!", mention="No one!"))
                 else:
@@ -883,30 +987,32 @@ class Lammy:
         @bot.command(name="sporder", aliases=["spnmorder", "spo"])
         @self.requires_admin_role
         async def manage_sp_colo_nm_order(ctx: Context, *args):
-            return await manage_nightmare_order(ctx, self._sp_colo_nm_order, *args)
+            _, guild_data = self.guild_from_ctx(ctx)
+            return await manage_nightmare_order(ctx, guild_data._sp_colo_nm_order, guild_data, *args)
 
         @bot.command(name="order", aliases=['nightmares', 'nmorder', 'o', 'nm'],  brief=Briefs.nightmares, help=Helps.nightmares, usage=Usages.nightmares)
         @self.requires_member_role
         async def order_command(ctx: Context, *args):
-            return await manage_nightmare_order(ctx, self._nm_order, *args)
+            _, guild_data = self.guild_from_ctx(ctx)
+            return await manage_nightmare_order(ctx, guild_data._nm_order, guild_data, *args)
 
-        async def manage_nightmare_order(ctx: Context, nm_order_list: list, *args):
+        async def manage_nightmare_order(ctx: Context, nm_order_list: list, guild_data: GuildData, *args):
             if len(args) == 0:
-                await ctx.send(f"Current nightmare order is:\n{nm_order_string(nm_order_list)}You can change the order using the command `{BOT_PREFIX}order {{nm1}} {{nm2}}`.")
+                await ctx.send(f"Current nightmare order is:\n{nm_order_string(nm_order_list,guild_data)}You can change the order using the command `{BOT_PREFIX}order {{nm1}} {{nm2}}`.")
             elif len(args) == 1:
                 nm_string = " ".join(args)
                 if nm_string.lower() == "clear":
                     nm_order_list.clear()
                     return await ctx.send(f"Successfully cleared order data!")
-                assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
+                assignment = u.get_nm_assignment_from_message(nm_string, guild_data.assignments)
                 if assignment is None:
                     return await ctx.send(f"I don't have any assignment data for {nm_string}!\nCheck the assignment list with `{BOT_PREFIX}assignment`")
                 return await push_summon(ctx, nm_order_list, *args)
-            elif not u.user_is_permitted(ctx.author, self.admin_roles):
+            elif not u.user_is_permitted(ctx.author, guild_data.admin_roles):
                 return await ctx.send(u.get2String("authentication", "error", str(ctx.author.name), ctx.command.name))
             elif args[0].lower() in ("remove", '-r'):
                 nm_string = " ".join(args[1:])
-                assignment = u.get_nm_assignment_from_message(nm_string, self.assignments)
+                assignment = u.get_nm_assignment_from_message(nm_string, guild_data.assignments)
                 if assignment is None:
                     return await ctx.send(f"I don't have any assignment data for {nm_string}!\nCheck the assignment list with `{BOT_PREFIX}assignment`")
                 try:
@@ -916,7 +1022,7 @@ class Lammy:
                     await ctx.send(f"{assignment.nm.name} isn't in the summoning order list!\nCheck the order list with `{BOT_PREFIX}order`")
             else:
                 assignment1, assignment2 = starmap(u.get_nm_assignment_from_message, zip(
-                    args, (self.assignments,) * 2, (True,) * 2, (nm_order_list, ) * 2))
+                    args, (guild_data.assignments,) * 2, (True,) * 2, (nm_order_list, ) * 2))
                 if assignment1 is None or assignment2 is None:
                     return await ctx.send("Please make sure both nightmares have assignments for them!")
                 nm1_order_index, nm2_order_index = None, None
@@ -969,27 +1075,31 @@ class Lammy:
         @bot.command(name="doConquest", aliases=["dc", "doc", "do"])
         @self.requires_admin_role
         async def do_conquest_pings(ctx: Context):
+            _, guild_data = self.guild_from_ctx(ctx)
             try:
-                self.conquest_task.cancel()
+                guild_data.conquest_task.cancel()
             except:
                 pass
-            if ctx is not None:
-                self.conquest_channel_data = ctx.channel.id, ctx.guild.id
-            channel = self.conquest_channel
-            self.conquest_task = bot.loop.create_task(do_conquest_message())
-            if ctx is not None:
-                await channel.send(f"Successfully started waiting for next conquest!")
-                await ctx.message.delete()
+            guild_data.conquest_channel_id = ctx.channel.id
+            create_conquest_task(guild_data)
+            guild_data.conquest_task = bot.loop.create_task(do_conquest_message(guild_data))
+            channel = guild_data.conquest_channel
+            await channel.send(f"Successfully started waiting for next conquest!")
+            await ctx.message.delete()
 
-        self.start_bot_conquest_pings = do_conquest_pings
+        def create_conquest_task(guild_data: GuildData):
+            bot.loop.create_task(do_conquest_message(guild_data))
+
+        self.start_bot_conquest_pings = create_conquest_task
 
         @bot.command(name="stopConquest", aliases=["sc", "stopc", "cs", "conquests", "conqueststop"])
         @self.requires_admin_role
         async def stop_conquest_pings(ctx: Context):
+            _, guild_data = self.guild_from_ctx(ctx)
             try:
-                conquest_canceled = self.conquest_task.cancel()
-                if not conquest_canceled and self.conquest_task.exception():
-                    exception = self.conquest_task.exception()
+                conquest_canceled = guild_data.conquest_task.cancel()
+                if not conquest_canceled and guild_data.conquest_task.exception():
+                    exception = guild_data.conquest_task.exception()
                     u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
                 await ctx.send('Successfully stopped conquest pings!')
             except Exception as e:
@@ -997,13 +1107,13 @@ class Lammy:
                 print(traceback.format_exception(type(e), e, e.__traceback__))
                 await ctx.send("Couldn't stop conquest pings! Please call my administrators!")
 
-        async def do_conquest_message():
-            channel = self.conquest_channel
+        async def do_conquest_message(guild_data: GuildData):
+            channel = guild_data.conquest_channel
             while True:
                 next_conquest = get_next_conquest()
 
                 def users_string():
-                    return ', '.join(user.mention for user in self.conquest_user_data.get(next_conquest.time().replace(tzinfo=timezone.utc), list()))
+                    return ', '.join(user.mention for user in guild_data.conquest_user_data.get(next_conquest.time().replace(tzinfo=timezone.utc), list()))
                 diff = next_conquest - datetime.now(tz=timezone.utc)
                 if diff > timedelta(minutes=1):
                     await asyncio.sleep(abs((diff + timedelta(minutes=-1)).total_seconds()))
