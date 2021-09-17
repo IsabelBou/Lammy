@@ -1,6 +1,7 @@
 import asyncio
 import re
 import traceback
+from asyncio.exceptions import CancelledError
 from datetime import date, datetime, time, timedelta, timezone
 from functools import wraps
 from itertools import groupby, starmap
@@ -1078,6 +1079,7 @@ class Lammy:
             _, guild_data = self.guild_from_ctx(ctx)
             try:
                 guild_data.conquest_task.cancel()
+                await ctx.send("Stopped waiting for conquest....")
             except:
                 pass
             guild_data.conquest_channel_id = ctx.channel.id
@@ -1098,14 +1100,14 @@ class Lammy:
             _, guild_data = self.guild_from_ctx(ctx)
             try:
                 conquest_canceled = guild_data.conquest_task.cancel()
-                if not conquest_canceled and guild_data.conquest_task.exception():
+                if not conquest_canceled:
                     exception = guild_data.conquest_task.exception()
                     u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
                 await ctx.send('Successfully stopped conquest pings!')
-            except AttributeError:
-                await ctx.send(f'I\'m not waiting for conquest right now dummy!')
+            except (AttributeError, CancelledError):
+                await ctx.send("I'm not waiting for conquest right now dummy!")
             except Exception as e:
-                u.err('Couldn\'t cancel task: ' + repr(e))
+                u.err("Couldn't cancel task: " + repr(e))
                 print(traceback.format_exception(type(e), e, e.__traceback__))
                 await ctx.send(f"Couldn't stop conquest pings! Please call my administrators and tell them I got this: {e}!")
 
