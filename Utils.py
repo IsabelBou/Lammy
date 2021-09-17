@@ -132,16 +132,6 @@ def get2String(id, node, dynamicParam1, dynamicParam2):
                 return(dynamicText)
 
 
-def fullClear():
-    os.system('clear')
-
-
-def clear():
-    print()
-    print()
-    print()
-
-
 def getRole(guild_roles, assignment_role):
     guild_roles = guild_roles or list()
     for role in guild_roles:
@@ -158,16 +148,9 @@ def getDiff(start_time, stop_time):
     return result
 
 
-def log(message, hasToPrint):
-    if hasToPrint:
-        print(f'{message}')
-    log = str(date.datetime.now()) + ' | ' + message
+def log(message):
+    print(f'{message}')
 
 
-def err(message, hasToPrint):
-    if hasToPrint:
-        print(f"\033[91m{message}\033[0m")
-
-    err = str(date.datetime.now()) + ' | ' + str(message)
-    with open("Lammy_log", "a") as f:
-        f.writelines(f"'ERROR: {err}'")
+def err(message):
+    print(f"\033[91m{message}\033[0m")

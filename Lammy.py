@@ -15,7 +15,7 @@ from tabulate import tabulate
 import Utils as u
 from config import (BOT_PREFIX, CASE_INSENSITIVE, DISCORD_INTENT,
                     REARGUARD_ROLE_NAME, VANGUARD_ROLE_NAME, AssignmentData,
-                    Briefs, Emojis, Helps, Usages, has_to_print)
+                    Briefs, Emojis, Helps, Usages)
 from config.config import (CONQUEST_TIMESLOTS, EMOJI_TO_TS_MAPPING,
                            EMOJIS_TO_WORD_MAPPING, TS_TO_EMOJI_MAPPING,
                            get_next_conquest)
@@ -206,10 +206,9 @@ class Lammy:
         self.is_sp_colo = False
         self.guilds_data: Dict[Union[str, int], GuildData] = {}
 
-        u.fullClear()
-        u.log(u.getString('separator', 'printable', None), False)
+        u.log(u.getString('separator', 'printable', None))
         initialization_message = u.getString('bot_initialized', 'info', None)
-        u.log(initialization_message, has_to_print)
+        u.log(initialization_message)
 
     def guild_data(self, guild: Union[str, int, Guild]) -> GuildData:
         if isinstance(guild, str):
@@ -530,7 +529,7 @@ class Lammy:
 
         async def colosseum(guild):
             u.log(u.getString('task_initiated',
-                              'info', None), has_to_print)
+                              'info', None))
             guild_data = self.guild_data(guild)
             roles = list(guild_data.guild.roles)
             channel = guild_data.colo_channel
@@ -585,7 +584,7 @@ class Lammy:
                 else:
                     await channel.send(u.getString('colosseum_about_to_start', 'info', guild_data.mention_members))
                 u.log(u.getString('colosseum_about_to_start', 'info',
-                                  guild_data.mention_members), has_to_print)
+                                  guild_data.mention_members))
                 await guild_data.wait_for_colo()
                 await channel.send(f"{guild_data.mention_members} Colo is up!")
                 if guild_data.demon1 is guild_data or guild_data.demon2 is None:
@@ -721,14 +720,14 @@ class Lammy:
                 demon_canceled = guild_data.demon_task.cancel()
                 if not colo_canceled and guild_data.colo_task.exception():
                     exception = guild_data.colo_task.exception()
-                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
+                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
                 if not demon_canceled and guild_data.demon_task.exception():
                     exception = guild_data.demon_task.exception()
-                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
+                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
                 guild_data.current_nm_order_index = 0
                 await ctx.send('Successfully stopped all tasks!')
             except Exception as e:
-                u.err('Couldn\'t cancel task: ' + repr(e), has_to_print)
+                u.err('Couldn\'t cancel task: ' + repr(e))
                 await ctx.send("Couldn't stop tasks!")
 
         @bot.command(name="demonlist", aliases=['dl'], help=Helps.list_demons, brief=Briefs.list_demons, usage=Usages.list_demons)
@@ -1100,10 +1099,10 @@ class Lammy:
                 conquest_canceled = guild_data.conquest_task.cancel()
                 if not conquest_canceled and guild_data.conquest_task.exception():
                     exception = guild_data.conquest_task.exception()
-                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__), has_to_print)
+                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
                 await ctx.send('Successfully stopped conquest pings!')
             except Exception as e:
-                u.err('Couldn\'t cancel task: ' + repr(e), has_to_print)
+                u.err('Couldn\'t cancel task: ' + repr(e))
                 print(traceback.format_exception(type(e), e, e.__traceback__))
                 await ctx.send("Couldn't stop conquest pings! Please call my administrators!")
 
@@ -1168,7 +1167,6 @@ class Lammy:
             else:
                 await ctx.send(f"I don't know any nightmare called {nm_string}!")
 
-        u.log(u.getString('bot_running', 'info', None), has_to_print)
+        u.log(u.getString('bot_running', 'info', None))
         bot.run(self.token)
-        u.clear()
-        u.log(u.getString('bot_closed', 'info', None), has_to_print)
+        u.log(u.getString('bot_closed', 'info', None))

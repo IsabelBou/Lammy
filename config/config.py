@@ -4,10 +4,6 @@ from typing import Tuple
 
 from discord import Intents
 
-# The next var defines whether or not the messages have to be printed on the bash.
-# In production it must to be set to False
-has_to_print = True
-
 BOT_PREFIX = "!"
 CASE_INSENSITIVE = True
 
