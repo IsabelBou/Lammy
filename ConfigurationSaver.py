@@ -54,11 +54,11 @@ class ConfigurationSaver:
                 }
                 for guild_data, guild_conf in zip(self._running_bot.guilds_data.values(), conf.values()):
                     if guild_conf.get("is_colo_task"):
-                        await asyncio.ensure_future(self._running_bot.start_colo_task(guild_data))
+                        self._running_bot.start_colo_task(guild_data)
                     if guild_conf.get("is_demon_task"):
-                        await asyncio.ensure_future(self._running_bot.start_demon_task(guild_data))
+                        self._running_bot.start_demon_task(guild_data)
                     if guild_conf["is_started_conquest"]:
-                        await asyncio.ensure_future(self._running_bot.start_bot_conquest_pings(guild_data))
+                        self._running_bot.start_bot_conquest_pings(guild_data)
 
     @property
     def _conf_data(self):
