@@ -1064,7 +1064,8 @@ class Lammy:
                 timeslots_table.append((
                     TS_TO_EMOJI_MAPPING[ts].value,
                     (datetime.combine(date.min, ts)).time(),
-                    f"`<t:{int((datetime.combine(date(2000, 1, 1), ts) + timedelta(hours=1)).timestamp())}:t>{'' if is_last else '`'}" # For some reason discord displays it one hour earlier....
+                    # For some reason discord displays it one hour earlier....
+                    f"`<t:{int((datetime.combine(date(2000, 1, 1), ts) + timedelta(hours=1)).timestamp())}:t>{'' if is_last else '`'}"
                 ))
             timeslots_table[-1][2]
             message: Message = await ctx.send(f"Choose your conquest timeslot!\n`{tabulate(timeslots_table, headers=titles,tablefmt='plain')}")
@@ -1101,10 +1102,12 @@ class Lammy:
                     exception = guild_data.conquest_task.exception()
                     u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
                 await ctx.send('Successfully stopped conquest pings!')
+            except AttributeError:
+                await ctx.send(f'I\'m not waiting for conquest right now dummy!')
             except Exception as e:
                 u.err('Couldn\'t cancel task: ' + repr(e))
                 print(traceback.format_exception(type(e), e, e.__traceback__))
-                await ctx.send("Couldn't stop conquest pings! Please call my administrators!")
+                await ctx.send(f"Couldn't stop conquest pings! Please call my administrators and tell them I got this: {e}!")
 
         async def do_conquest_message(guild_data: GuildData):
             channel = guild_data.conquest_channel
