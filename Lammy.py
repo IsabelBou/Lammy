@@ -1,11 +1,13 @@
 import asyncio
 import re
 import traceback
-from asyncio.exceptions import CancelledError
+from asyncio.exceptions import CancelledError, InvalidStateError
+from asyncio.tasks import Task
+from contextlib import suppress
 from datetime import date, datetime, time, timedelta, timezone
 from functools import wraps
 from itertools import groupby, starmap
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from discord import Game, Guild
 from discord import Member as DiscordMember
@@ -32,7 +34,7 @@ class GuildData:
     def __init__(self, bot: Bot, guild_id: str) -> None:
         self.bot = bot
         self.guild_id = guild_id
-        self.conquest_task = None
+        self.conquest_task: Optional[Task] = None
         self.colo_task = None
         self.demon_task = None
         self.retards = 0  # Summon delay of players summoning nightmares
@@ -77,7 +79,7 @@ class GuildData:
             sporder=self._sp_colo_nm_order,
             conquest_channel_id=self.conquest_channel_id,
             conquest_user_data=self.conquest_user_data,
-            is_started_conquest=self.conquest_task is not None
+            is_started_conquest=self.conquest_task is not None and not self.conquest_task.done()
         )
 
     @classmethod
@@ -719,12 +721,14 @@ class Lammy:
             try:
                 colo_canceled = guild_data.colo_task.cancel()
                 demon_canceled = guild_data.demon_task.cancel()
-                if not colo_canceled and guild_data.colo_task.exception():
-                    exception = guild_data.colo_task.exception()
-                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
-                if not demon_canceled and guild_data.demon_task.exception():
-                    exception = guild_data.demon_task.exception()
-                    u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
+                if not colo_canceled:
+                    with suppress(CancelledError, InvalidStateError):
+                        exception = guild_data.colo_task.exception()
+                        u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
+                if not demon_canceled:
+                    with suppress(CancelledError, InvalidStateError):
+                        exception = guild_data.demon_task.exception()
+                        u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
                 guild_data.current_nm_order_index = 0
                 await ctx.send('Successfully stopped all tasks!')
             except Exception as e:
@@ -1103,7 +1107,9 @@ class Lammy:
                 if not conquest_canceled:
                     exception = guild_data.conquest_task.exception()
                     u.err(traceback.format_exception(type(exception), exception, exception.__traceback__))
-                await ctx.send('Successfully stopped conquest pings!')
+                    await ctx.send(f"Something went wrong and I couldn't stop conquest pings! Error: {repr(exception)}")
+                else:
+                    await ctx.send('Successfully stopped conquest pings!')
             except (AttributeError, CancelledError):
                 await ctx.send("I'm not waiting for conquest right now dummy!")
             except Exception as e:
