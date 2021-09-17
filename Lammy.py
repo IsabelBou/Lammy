@@ -35,8 +35,8 @@ class GuildData:
         self.bot = bot
         self.guild_id = guild_id
         self.conquest_task: Optional[Task] = None
-        self.colo_task = None
-        self.demon_task = None
+        self.colo_task: Optional[Task] = None
+        self.demon_task: Optional[Task] = None
         self.retards = 0  # Summon delay of players summoning nightmares
         self.demon1 = None
         self.demon2 = None
@@ -73,8 +73,8 @@ class GuildData:
             colo_time=self.colo_time,
             demons=(self.demon1, self.demon2),
             colo_channel_id=self.colo_channel_id,
-            is_colo_task=self.colo_task is not None,
-            is_demon_task=self.demon_task is not None,
+            is_colo_task=self.colo_task is not None and not self.colo_task.done(),
+            is_demon_task=self.demon_task is not None and not self.demon_task.done(),
             order=self._nm_order,
             sporder=self._sp_colo_nm_order,
             conquest_channel_id=self.conquest_channel_id,
@@ -734,6 +734,9 @@ class Lammy:
             except Exception as e:
                 u.err('Couldn\'t cancel task: ' + repr(e))
                 await ctx.send("Couldn't stop tasks!")
+            finally:
+                guild_data.colo_task = None
+                guild_data.demon_task = None
 
         @bot.command(name="demonlist", aliases=['dl'], help=Helps.list_demons, brief=Briefs.list_demons, usage=Usages.list_demons)
         async def listdemon(ctx):
@@ -1083,18 +1086,15 @@ class Lammy:
             _, guild_data = self.guild_from_ctx(ctx)
             try:
                 guild_data.conquest_task.cancel()
-                await ctx.send("Stopped waiting for conquest....")
             except:
                 pass
             guild_data.conquest_channel_id = ctx.channel.id
             create_conquest_task(guild_data)
-            guild_data.conquest_task = bot.loop.create_task(do_conquest_message(guild_data))
             channel = guild_data.conquest_channel
             await channel.send(f"Successfully started waiting for next conquest!")
-            await ctx.message.delete()
 
         def create_conquest_task(guild_data: GuildData):
-            bot.loop.create_task(do_conquest_message(guild_data))
+            guild_data.conquest_task = bot.loop.create_task(do_conquest_message(guild_data))
 
         self.start_bot_conquest_pings = create_conquest_task
 
