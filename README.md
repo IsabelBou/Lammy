@@ -4,6 +4,8 @@ Bot for Discord servers, designed for the automated management and coordination 
 
 To check the list of available commands, use `!help`. To check what an individual command does, write `!help <command>`.
 
+[Add me to your server!](https://discord.com/api/oauth2/authorize?client_id=798683554145894401&permissions=378226048064&scope=bot)
+
 ## Initial Setup
 
 1. Give a role with admin permissions to Lammy; she'll need to create roles, ping them, react to messages and be able to write in channels where maybe you don't want other people to do so.
