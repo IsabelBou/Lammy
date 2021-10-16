@@ -61,6 +61,7 @@ class GuildData:
 
         self.notification_delay = 10
         self.sp_notification_delay = 30
+        self.is_sp_colo = False
 
     def to_json(self):
         return dict(
@@ -206,7 +207,6 @@ class Lammy:
         self.start_bot_conquest_pings = None
 
         self.start_bot_waiting = None
-        self.is_sp_colo = False
         self.guilds_data: Dict[Union[str, int], GuildData] = {}
 
         u.log(u.getString('separator', 'printable', None))
@@ -551,7 +551,7 @@ class Lammy:
 
                     nm_skill_time = int(previous_nm.nm.colo_skill.duration + previous_nm.nm.colo_skill.lead_time)
                     notification_delay = guild_data.sp_notification_delay if guild_data.current_assignment.nm.colo_skill.sp else guild_data.notification_delay
-                    if self.is_sp_colo:
+                    if guild_data.is_sp_colo:
                         nm_skill_time = int(previous_nm.nm.colo_skill.duration) + 5
                         notification_delay = guild_data.notification_delay
                     await asyncio.sleep(abs(nm_skill_time - notification_delay))
@@ -988,8 +988,9 @@ class Lammy:
         @bot.command(name="setspcolo", aliases=["spcolo", "togglesp", "togglecolo"])
         @self.requires_admin_role
         async def toggle_sp_colo(ctx: Context):
-            self.is_sp_colo = not self.is_sp_colo
-            await ctx.send(f"Set colo as {'SP Colo' if self.is_sp_colo else 'Regular Colo'}")
+            _, guild = self.guild_from_ctx(ctx)
+            guild.is_sp_colo = not guild.is_sp_colo
+            await ctx.send(f"Set colo as {'SP Colo' if guild.is_sp_colo else 'Regular Colo'}")
 
         @bot.command(name="sporder", aliases=["spnmorder", "spo"])
         @self.requires_admin_role
