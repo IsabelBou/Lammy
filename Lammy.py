@@ -646,7 +646,7 @@ class Lammy:
 
         @bot.command(name="yell", hidden=True)
         async def lammy_yel(ctx: Context, *args):
-            if any([role.name == "Lammy Manager" for role in ctx.author.roles]):
+            if any([role.name == "Lammy Manager" for role in ctx.author.roles]) or ctx.author.name == "Guydht":
                 await ctx.send(f"**{' '.join(args)}**")
                 await ctx.message.delete()
             else:
