@@ -38,7 +38,12 @@ class NightmareScrapper:
 
     def find_nm(self, search_string: str) -> pd.DataFrame:
         data = self.nm_data
-        return data[data.name.str.contains(search_string, regex=False, case=False)]
+        matches = data[data.name.str.contains(search_string, regex=False, case=False)]
+        if len(matches) > 1:
+            exact_match = data[data.name.str.lower() == search_string.lower()]
+            if len(exact_match) == 1:
+                return exact_match
+        return matches
 
     def nm_by_resource_id(self, resource_id: str) -> pd.DataFrame:
         data = self.nm_data
