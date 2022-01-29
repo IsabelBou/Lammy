@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
-from threading import Thread, main_thread
+from threading import Thread
 
 import numpy as np
 import pandas as pd
@@ -55,16 +55,12 @@ class NightmareScrapper:
 
     @staticmethod
     def _get_nm_dataframe():
-        def get_jp_nm_data():
-            nm_jp_data = pd.read_json(NM_JP_JSON_URL)
-            nm_jp_data = nm_jp_data[nm_jp_data["cardType"] == 3]
-            nm_jp_data = nm_jp_data[nm_jp_data.groupby('cardUniqueId').evolutionLevel.transform(max) == nm_jp_data.evolutionLevel]
-            return nm_jp_data
 
         def get_nm_data():
             nm_data = pd.read_json(NM_JSON_URL)
             nm_data = nm_data[nm_data["cardType"] == 3]
             nm_data = nm_data[nm_data.groupby('cardUniqueId').evolutionLevel.transform(max) == nm_data.evolutionLevel]
+            nm_data = nm_data[nm_data.groupby('resourceName').cardMstId.transform(min) == nm_data.cardMstId]
             return nm_data
 
         def get_nm_skills_data():
@@ -72,16 +68,13 @@ class NightmareScrapper:
 
         with ThreadPoolExecutor(3) as workers:
             nm_data_future = workers.submit(get_nm_data)
-            nm_jp_data_future = workers.submit(get_jp_nm_data)
             nm_skill_future = workers.submit(get_nm_skills_data)
             nm_data = nm_data_future.result()
             nm_skill_data = nm_skill_future.result()
-            nm_jp_data = nm_jp_data_future.result()
-            nm_data = pd.merge(nm_data, nm_jp_data, on="cardMstId", suffixes=("", "_jp"))
             merged_data = pd.merge(nm_data, nm_skill_data, on="artMstId")
             merged_story_data = pd.merge(nm_data, nm_skill_data, left_on="questArtMstId", right_on="artMstId")
             merged_data = merged_data[["sp", "duration", "name_x", "name_y", "description_x",
-                                       "description_y", "cardMstId", "leadTime", "attribute", "shortName", "resourceName_jp"]]
+                                       "description_y", "cardMstId", "leadTime", "attribute", "shortName", "resourceName_x"]]
             merged_data["story_skill_name"] = merged_story_data["name_y"]
             merged_data["story_skill_sp"] = merged_story_data["sp"]
             merged_data["story_skill_duration"] = merged_story_data["duration"]
@@ -89,4 +82,4 @@ class NightmareScrapper:
             merged_data["story_skill_description"] = merged_story_data["description_y"]
             merged_data["color"] = merged_data["attribute"].map(ATTRIBUTE_TO_COLOR_MAPPING)
             del merged_data["attribute"]
-            return merged_data.rename(columns=dict(name_x="name", description_y="skill_description", description_x="description", cardMstId="card_id", resourceName_jp="resource_name", name_y="skill_name", leadTime="lead_time", shortName="_short_name"))
+            return merged_data.rename(columns=dict(name_x="name", description_y="skill_description", cardMstId="card_id", resourceName_x="resource_name", description_x="description", name_y="skill_name", leadTime="lead_time", shortName="_short_name"))
