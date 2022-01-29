@@ -657,7 +657,7 @@ class Lammy:
             if len(args) == 0:
                 return await ctx.send("Please provide 1 or more arguments for this command!")
             nm_string = " ".join(args)
-            nm = u.get_nm_data_from_message(nm_string)
+            nm = u.get_nm_data_from_message(nm_string, True)
             if nm is not None:
                 embed = nm.story_embed
                 await ctx.send(embed=embed)
@@ -669,7 +669,7 @@ class Lammy:
             if len(args) == 0:
                 return await ctx.send("Please provide 1 or more arguments for this command!")
             nm_string = " ".join(args)
-            nm = u.get_nm_data_from_message(nm_string)
+            nm = u.get_nm_data_from_message(nm_string, True)
             if nm is not None:
                 embed = nm.embed
                 await ctx.send(embed=embed)

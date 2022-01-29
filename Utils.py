@@ -59,9 +59,11 @@ def nm_by_id(nm_id: str) -> Optional[NightmareData]:
     return NightmareData.from_series(df.iloc[0])
 
 
-def get_nm_data_from_message(message):
+def get_nm_data_from_message(message, force_get=False):
     df = nightmare_scrapper.find_nm(message)
-    if df.empty or len(df) > 1:
+    if df.empty:
+        return None
+    if len(df) > 1 and not force_get:
         return None
     return NightmareData.from_series(df.iloc[0])
 
